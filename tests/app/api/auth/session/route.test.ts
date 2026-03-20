@@ -3,20 +3,20 @@ import request from 'supertest';
 import { NextRequest } from 'next/server';
 import { GET, POST } from '@/app/api/auth/session/route';
 
-const signJwtMock = jest.fn(() => 'token.mock');
-const getRedirectForPlanMock = jest.fn(() => '/');
+const signJwtMock = jest.fn((_payload: unknown) => 'token.mock');
+const getRedirectForPlanMock = jest.fn((_payload?: unknown) => '/');
 const getAuthCookieOptionsMock = jest.fn(() => ({ path: '/', httpOnly: true }));
 
 jest.mock('@/lib/jwt', () => ({
-  signJwt: (...args: unknown[]) => signJwtMock(...args),
+  signJwt: (payload: unknown) => signJwtMock(payload),
 }));
 
 jest.mock('@/lib/plan-routing', () => ({
-  getRedirectForPlan: (...args: unknown[]) => getRedirectForPlanMock(...args),
+  getRedirectForPlan: (payload?: unknown) => getRedirectForPlanMock(payload),
 }));
 
 jest.mock('@/lib/auth-cookie', () => ({
-  getAuthCookieOptions: (...args: unknown[]) => getAuthCookieOptionsMock(...args),
+  getAuthCookieOptions: () => getAuthCookieOptionsMock(),
 }));
 
 function createServer() {
