@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { Suspense, useState } from 'react';
 import { TopAppBar } from '@/components/top-bar';
 import { BottomNavBar } from '@/components/bottom-bar';
 import { formatCurrency } from '@/lib/utils';
@@ -16,7 +16,7 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { useSearchParams } from 'next/navigation';
 
-export default function CheckoutPage() {
+function CheckoutPageContent() {
   const [cardName, setCardName] = useState('');
   const [cardNumber, setCardNumber] = useState('');
   const [expiry, setExpiry] = useState('');
@@ -218,5 +218,13 @@ export default function CheckoutPage() {
       </main>      
       <BottomNavBar />
     </div>
+  );
+}
+
+export default function CheckoutPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-surface" />}>
+      <CheckoutPageContent />
+    </Suspense>
   );
 }
