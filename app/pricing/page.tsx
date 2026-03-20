@@ -7,6 +7,7 @@ import { BottomNavBar } from '@/components/bottom-bar';
 import { auth, db } from '@/lib/firebase';
 import { buildPaidSubscription, buildTrialSubscription, type SubscriptionPlan } from '@/lib/subscription';
 import { createSubscriptionEvent } from '@/lib/firestore-data';
+import { getPlansConfig, type PlansConfig } from '@/lib/plans-config';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { 
@@ -21,6 +22,13 @@ import {
   Bell
 } from 'lucide-react';
 import { motion } from 'motion/react';
+
+function formatPriceCentsBR(cents: number) {
+  return new Intl.NumberFormat('pt-BR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(cents / 100);
+}
 
 function buildSessionUrl(params: {
   userId: string;
@@ -44,6 +52,7 @@ export default function PricingPage() {
   const [error, setError] = React.useState('');
   const [authUser, setAuthUser] = React.useState<User | null>(null);
   const [isAuthReady, setIsAuthReady] = React.useState(false);
+  const [plansConfig, setPlansConfig] = React.useState<PlansConfig | null>(null);
 
   React.useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -54,11 +63,33 @@ export default function PricingPage() {
     return unsubscribe;
   }, []);
 
+  React.useEffect(() => {
+    let isMounted = true;
+    getPlansConfig()
+      .then((cfg) => {
+        if (!isMounted) return;
+        setPlansConfig(cfg);
+      })
+      .catch(() => {
+        // If plans config isn't available, keep UI non-blocking and fail activation.
+        if (!isMounted) return;
+        setPlansConfig(null);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const activatePlan = async (plan: SubscriptionPlan) => {
     setError('');
     setLoadingPlan(plan);
 
     try {
+      if (!plansConfig) {
+        const cfg = await getPlansConfig();
+        setPlansConfig(cfg);
+      }
+
       if (!isAuthReady) {
         setError('Estamos preparando sua sessao. Tente novamente em alguns segundos.');
         setLoadingPlan(null);
@@ -82,9 +113,11 @@ export default function PricingPage() {
         return;
       }
 
-      const subscriptionData = plan === 'visitante'
-        ? { ...buildTrialSubscription(), trialActivated: true }
-        : buildPaidSubscription(plan);
+      const cfg = plansConfig ?? (await getPlansConfig());
+      const subscriptionData =
+        plan === 'visitante'
+          ? { ...buildTrialSubscription(cfg.trialDays), trialActivated: true }
+          : buildPaidSubscription(plan, plan === 'premium' ? cfg.premium.credits : cfg.basic.credits);
 
       await updateDoc(userRef, subscriptionData);
       await createSubscriptionEvent(user.uid, {
@@ -166,7 +199,9 @@ export default function PricingPage() {
               <h3 className="font-headline text-2xl md:text-3xl font-bold mb-2">Plano Básico</h3>
               <div className="flex items-baseline justify-center md:justify-start gap-1 mt-4">
                 <span className="text-xs md:text-sm font-bold text-on-surface-variant">R$</span>
-                <span className="text-3xl sm:text-4xl md:text-5xl font-headline font-black">29,90</span>
+                <span className="text-3xl sm:text-4xl md:text-5xl font-headline font-black">
+                  {plansConfig ? formatPriceCentsBR(plansConfig.basic.priceMonthlyCents) : '—'}
+                </span>
                 <span className="text-secondary font-medium text-sm md:text-base">/mês</span>
               </div>
             </div>
@@ -176,7 +211,9 @@ export default function PricingPage() {
                   <Token className="w-5 h-5 text-primary" />
                 </div>
                 <div>
-                  <p className="font-bold text-on-surface text-sm md:text-base">10 Créditos</p>
+                  <p className="font-bold text-on-surface text-sm md:text-base">
+                    {plansConfig ? `${plansConfig.basic.credits} Créditos` : '—'}
+                  </p>
                   <p className="text-[10px] md:text-xs text-secondary font-medium uppercase tracking-widest">Plano pago com trial desativado</p>
                 </div>
               </div>
@@ -208,7 +245,7 @@ export default function PricingPage() {
             <button
               type="button"
               onClick={() => activatePlan('basic')}
-              disabled={loadingPlan !== null || !isAuthReady}
+              disabled={loadingPlan !== null || !isAuthReady || !plansConfig}
               className="w-full py-4 bg-secondary text-on-secondary font-black text-[10px] sm:text-xs uppercase tracking-widest rounded-2xl shadow-lg shadow-secondary/20 hover:scale-[1.02] active:scale-95 transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-70"
             >
               {loadingPlan === 'basic' ? 'Ativando...' : 'Selecionar Básico'}
@@ -232,7 +269,9 @@ export default function PricingPage() {
               </h3>
               <div className="flex items-baseline justify-center md:justify-start gap-1 mt-4">
                 <span className="text-xs md:text-sm font-bold text-on-surface-variant">R$</span>
-                <span className="text-3xl sm:text-4xl md:text-5xl font-headline font-black text-primary">54,90</span>
+                <span className="text-3xl sm:text-4xl md:text-5xl font-headline font-black text-primary">
+                  {plansConfig ? formatPriceCentsBR(plansConfig.premium.priceMonthlyCents) : '—'}
+                </span>
                 <span className="text-secondary font-medium text-sm md:text-base">/mês</span>
               </div>
             </div>
@@ -242,7 +281,9 @@ export default function PricingPage() {
                   <Token className="w-5 h-5 text-primary fill-current" />
                 </div>
                 <div>
-                  <p className="font-bold text-on-surface text-sm md:text-base">25 Créditos</p>
+                  <p className="font-bold text-on-surface text-sm md:text-base">
+                    {plansConfig ? `${plansConfig.premium.credits} Créditos` : '—'}
+                  </p>
                   <p className="text-[10px] md:text-xs text-secondary font-medium uppercase tracking-widest">Plano pago com trial desativado</p>
                 </div>
               </div>
@@ -274,7 +315,7 @@ export default function PricingPage() {
             <button
               type="button"
               onClick={() => activatePlan('premium')}
-              disabled={loadingPlan !== null || !isAuthReady}
+              disabled={loadingPlan !== null || !isAuthReady || !plansConfig}
               className="w-full py-4 bg-primary text-on-primary font-black text-[10px] sm:text-xs uppercase tracking-widest rounded-2xl shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-70"
             >
               {loadingPlan === 'premium' ? 'Ativando...' : 'Assinar Premium'}
@@ -286,16 +327,22 @@ export default function PricingPage() {
         <section className="bg-surface-container-low rounded-[2rem] p-8 flex flex-col md:flex-row items-center justify-between gap-8 shadow-md border border-outline-variant/10">
           <div className="flex flex-col gap-2 text-center md:text-left">
             <h4 className="font-headline text-xl md:text-2xl font-bold">Ainda na dúvida?</h4>
-            <p className="text-sm md:text-base text-secondary font-medium">Teste o plano básico por 7 dias, com 0 créditos e trial ativo.</p>
+            <p className="text-sm md:text-base text-secondary font-medium">
+              Teste o plano básico por {plansConfig ? `${plansConfig.trialDays} dias` : '—'}, com 0 créditos e trial ativo.
+            </p>
           </div>
           <button
             type="button"
             onClick={() => activatePlan('visitante')}
-            disabled={loadingPlan !== null || !isAuthReady}
+            disabled={loadingPlan !== null || !isAuthReady || !plansConfig}
             className="w-full md:w-auto h-14 px-10 bg-surface-container-highest/50 border border-dashed border-outline-variant/30 text-primary font-black text-[10px] sm:text-xs uppercase tracking-widest rounded-2xl hover:bg-primary/10 transition-all flex items-center justify-center gap-3 active:scale-95 cursor-pointer disabled:cursor-not-allowed disabled:opacity-70"
           >
             <PlayCircle className="w-5 h-5" />
-            {loadingPlan === 'visitante' ? 'Ativando...' : 'Testar 7 Dias Grátis'}
+            {loadingPlan === 'visitante'
+              ? 'Ativando...'
+              : plansConfig
+                ? `Testar ${plansConfig.trialDays} Dias Grátis`
+                : 'Testar Dias Grátis'}
           </button>
         </section>
       </main>      

@@ -15,6 +15,7 @@ import { auth, db, googleProvider } from '@/lib/firebase';
 import { GoogleIcon } from '@/components/google-icon';
 import { buildTrialSubscription } from '@/lib/subscription';
 import { buildDefaultUserFields } from '@/lib/firestore-data';
+import { getPlansConfig } from '@/lib/plans-config';
 import {
   createUserWithEmailAndPassword,
   updateProfile,
@@ -50,6 +51,7 @@ export default function SignupPage() {
       const isNewUser = !userDoc.exists();
 
       if (isNewUser) {
+        const plansConfig = await getPlansConfig();
         await setDoc(userRef, {
           id: user.uid,
           name: user.displayName || '',
@@ -57,7 +59,7 @@ export default function SignupPage() {
           photoURL: user.photoURL || '',
           createdAt: serverTimestamp(),
           ...buildDefaultUserFields(),
-          ...buildTrialSubscription()
+          ...buildTrialSubscription(plansConfig.trialDays),
         });
       }
 
@@ -86,6 +88,7 @@ export default function SignupPage() {
 
       await updateProfile(userCredential.user, { displayName: name });
 
+      const plansConfig = await getPlansConfig();
       await setDoc(doc(db, 'users', userCredential.user.uid), {
         id: userCredential.user.uid,
         name,
@@ -93,7 +96,7 @@ export default function SignupPage() {
         photoURL: '',
         createdAt: serverTimestamp(),
         ...buildDefaultUserFields(),
-        ...buildTrialSubscription()
+        ...buildTrialSubscription(plansConfig.trialDays),
       });
 
       router.push('/pricing');

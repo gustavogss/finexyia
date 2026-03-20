@@ -18,6 +18,7 @@ import { useTransactions } from '@/lib/transactions-context';
 import { useAuthUser } from '@/lib/use-auth-user';
 import { getUserProfile, subscribeToGoals } from '@/lib/firestore-data';
 import type { GoalRecord, UserProfile } from '@/lib/firestore-types';
+import { getPlansConfig } from '@/lib/plans-config';
 
 type RewardTask = {
   id: string;
@@ -42,6 +43,7 @@ export default function RewardsPage() {
   const { user } = useAuthUser();
   const [profile, setProfile] = React.useState<UserProfile | null>(null);
   const [goals, setGoals] = React.useState<GoalRecord[]>([]);
+  const [premiumCreditsGoal, setPremiumCreditsGoal] = React.useState<number | null>(null);
 
   React.useEffect(() => {
     if (!user) {
@@ -141,8 +143,26 @@ export default function RewardsPage() {
   ];
 
   const userCredits = profile?.credits ?? 0;
-  const premiumGoal = 25;
-  const progressPercent = Math.min(100, (userCredits / premiumGoal) * 100);
+  const progressPercent =
+    premiumCreditsGoal === null || premiumCreditsGoal <= 0
+      ? 0
+      : Math.min(100, (userCredits / premiumCreditsGoal) * 100);
+
+  React.useEffect(() => {
+    let isMounted = true;
+    getPlansConfig()
+      .then((cfg) => {
+        if (!isMounted) return;
+        setPremiumCreditsGoal(cfg.premium.credits);
+      })
+      .catch(() => {
+        if (!isMounted) return;
+        setPremiumCreditsGoal(null);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   return (
     <div className="min-h-screen pb-32 bg-surface">
@@ -166,7 +186,7 @@ export default function RewardsPage() {
 
           <div className="space-y-3">
             <div className="flex justify-between text-xs font-bold text-secondary">
-              <span>Progresso para 25 créditos</span>
+              <span>Progresso para {premiumCreditsGoal === null ? '—' : `${premiumCreditsGoal} créditos`}</span>
               <span>{progressPercent}%</span>
             </div>
             <div className="w-full h-3 rounded-full bg-surface-container-highest overflow-hidden">

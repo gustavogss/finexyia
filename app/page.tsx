@@ -26,6 +26,7 @@ import { BottomNavBar } from '@/components/bottom-bar';
 import { getUserProfile, subscribeToGoals } from '@/lib/firestore-data';
 import { useAuthUser } from '@/lib/use-auth-user';
 import type { GoalRecord, UserProfile } from '@/lib/firestore-types';
+import { getPlansConfig } from '@/lib/plans-config';
 
 type SessionState = {
   authenticated: boolean;
@@ -44,6 +45,7 @@ export default function DashboardPage() {
   const [goals, setGoals] = React.useState<GoalRecord[]>([]);
   const { user } = useAuthUser();
   const [nowMs, setNowMs] = React.useState(() => Date.now());
+  const [premiumCreditsGoal, setPremiumCreditsGoal] = React.useState<number | null>(null);
 
   React.useEffect(() => {
     // Keep trial countdown and month comparisons up to date.
@@ -110,6 +112,22 @@ export default function DashboardPage() {
       unsubscribeGoals();
     };
   }, [user]);
+
+  React.useEffect(() => {
+    let isMounted = true;
+    getPlansConfig()
+      .then((cfg) => {
+        if (!isMounted) return;
+        setPremiumCreditsGoal(cfg.premium.credits);
+      })
+      .catch(() => {
+        if (!isMounted) return;
+        setPremiumCreditsGoal(null);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // Calcular receitas e despesas do mês atual
   const now = new Date(nowMs);
@@ -554,11 +572,14 @@ export default function DashboardPage() {
             className="bg-tertiary-container/55 p-6 rounded-[2.5rem] shadow-sm flex flex-col justify-between gap-4 border border-outline-variant/15 h-full"
           >
             {(() => {
-              const creditsGoal = 25;
+              const creditsGoal = premiumCreditsGoal;
               const userCredits = Math.round(profile?.credits ?? 0);
-              const creditsRemaining = Math.max(0, creditsGoal - userCredits);
+              const creditsRemaining =
+                creditsGoal === null ? 0 : Math.max(0, creditsGoal - userCredits);
               const progress =
-                creditsGoal > 0 ? Math.min(100, (userCredits / creditsGoal) * 100) : 0;
+                creditsGoal === null || creditsGoal <= 0
+                  ? 0
+                  : Math.min(100, (userCredits / creditsGoal) * 100);
 
               return (
                 <>
@@ -572,7 +593,9 @@ export default function DashboardPage() {
                       </h4>
                     </div>
                     <p className="text-on-tertiary-container/80 text-xs leading-relaxed font-medium">
-                      {creditsRemaining > 0 ? (
+                      {creditsGoal === null ? (
+                        <>Carregando...</>
+                      ) : creditsRemaining > 0 ? (
                         <>
                           Faltam{' '}
                           <span className="font-black text-on-tertiary-container">{creditsRemaining}</span> créditos para você
@@ -589,7 +612,7 @@ export default function DashboardPage() {
                   <div className="w-full space-y-2">
                     <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-on-tertiary-container">
                       <span>{userCredits}</span>
-                      <span>{creditsGoal}</span>
+                      <span>{creditsGoal === null ? '—' : creditsGoal}</span>
                     </div>
                     <div className="w-full bg-on-tertiary-container/10 h-2 rounded-full overflow-hidden p-0.5">
                       <div
