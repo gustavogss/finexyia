@@ -21,6 +21,9 @@ import {
 
 import { motion } from 'motion/react';
 import { useTransactions } from '@/lib/transactions-context';
+import { useAuthUser } from '@/lib/use-auth-user';
+import { subscribeToGoals } from '@/lib/firestore-data';
+import type { GoalRecord } from '@/lib/firestore-types';
 import { 
   PieChart, 
   Pie, 
@@ -62,6 +65,8 @@ const getCategoryColor = (category: string) => {
 
 export default function AnalysisPage() {
   const { transactions } = useTransactions();
+  const { user } = useAuthUser();
+  const [goals, setGoals] = React.useState<GoalRecord[]>([]);
   const [selectedPeriod, setSelectedPeriod] = React.useState<'current' | 'last' | 'quarter'>('current');
   const [aiInsight, setAiInsight] = React.useState<string>('');
   const [isLoadingAI, setIsLoadingAI] = React.useState(false);
@@ -72,6 +77,18 @@ export default function AnalysisPage() {
     projectedAmount: number;
   } | null>(null);
   const [isLoadingInvestment, setIsLoadingInvestment] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!user) {
+      setGoals([]);
+      return;
+    }
+
+    const unsubscribeGoals = subscribeToGoals(user.uid, setGoals);
+    return () => {
+      unsubscribeGoals();
+    };
+  }, [user]);
 
   // Filter transactions based on period
   const now = React.useMemo(() => new Date(), []);
@@ -165,12 +182,10 @@ export default function AnalysisPage() {
 
       const summary = filteredTransactions.map(t => `${t.date}: ${t.description} (${t.category}) - R$ ${t.amount} [${t.type}]`).join('\n');
       
-      const goals = [
-        { title: 'Viagem para o Japão', current: 8500, target: 25000 },
-        { title: 'Reserva de Emergência', current: 12000, target: 15000 },
-        { title: 'Novo SUV 2024', current: 45000, target: 80000 }
-      ];
-      const goalsSummary = goals.map(g => `${g.title}: R$ ${g.current} de R$ ${g.target}`).join('\n');
+      const goalsSummary =
+        goals.length > 0
+          ? goals.map((g) => `${g.name}: R$ ${g.currentAmount} de R$ ${g.targetAmount}`).join('\n')
+          : 'Sem metas cadastradas ainda.';
 
       const prompt = `Analise este histórico financeiro e considere as metas do usuário. Dê um conselho curto e prático (máximo 2 parágrafos) para economizar ou investir melhor, sugerindo ações específicas para atingir as metas. Seja direto e use um tom amigável de fintech.
       
@@ -192,7 +207,7 @@ export default function AnalysisPage() {
     } finally {
       setIsLoadingAI(false);
     }
-  }, [filteredTransactions]);
+  }, [filteredTransactions, goals]);
 
   const generateInvestmentInsight = React.useCallback(async () => {
     if (!process.env.NEXT_PUBLIC_GEMINI_API_KEY || totalIncome <= 0) return;
@@ -419,7 +434,7 @@ export default function AnalysisPage() {
             </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-10 md:gap-16 items-center">
-            <div className="relative flex justify-center items-center h-48 sm:h-64 sm:h-80">
+            <div className="relative flex justify-center items-center h-48 sm:h-80">
               {sortedCategories.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>

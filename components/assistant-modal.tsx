@@ -11,7 +11,7 @@ import ReactMarkdown from 'react-markdown';
 export function AssistantModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const { transactions, balance, totalIncome, totalExpenses } = useTransactions();
   const [messages, setMessages] = useState<{ role: 'user' | 'model'; text: string }[]>([
-    { role: 'model', text: 'Olá! Sou o Assistente FinexyIA. Analisei seu padrão de consumo e notei que você pode economizar mais R$ 200 este mês. Como posso te ajudar hoje?' }
+    { role: 'model', text: 'Olá! Sou o Assistente FinexyIA. Com base nos seus dados, posso te ajudar a entender seus gastos e sugerir formas de economizar. Como posso te ajudar hoje?' }
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);

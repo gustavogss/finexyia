@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { TopAppBar } from '@/components/top-bar';
 import { BottomNavBar } from '@/components/bottom-bar';
+import { formatCurrency } from '@/lib/utils';
 import { 
   Wifi as Contactless, 
   Banknote as Payments, 
@@ -13,6 +14,7 @@ import {
   ArrowRight as ArrowForward 
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { useSearchParams } from 'next/navigation';
 
 export default function CheckoutPage() {
   const [cardName, setCardName] = useState('');
@@ -20,6 +22,17 @@ export default function CheckoutPage() {
   const [expiry, setExpiry] = useState('');
   const [cvv, setCvv] = useState('');
   const [focusedField, setFocusedField] = useState<string | null>(null);
+  const searchParams = useSearchParams();
+
+  const totalAmount = React.useMemo(() => {
+    const raw = searchParams.get('amount') ?? searchParams.get('total');
+    if (!raw) return null;
+
+    // Accept formats like: "1250", "1250.50", "1.250,50"
+    const normalized = raw.replace(/\./g, '').replace(',', '.');
+    const value = Number(normalized);
+    return Number.isFinite(value) ? value : null;
+  }, [searchParams]);
 
   const handleCardNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let value = e.target.value.replace(/\D/g, '');
@@ -182,7 +195,9 @@ export default function CheckoutPage() {
           <div className="bg-surface-container-low rounded-xl p-6 flex items-center justify-between">
             <div className="space-y-0.5">
               <p className="text-sm text-secondary font-medium">Total da Compra</p>
-              <p className="text-2xl font-headline font-bold text-on-secondary-fixed">R$ 1.250,00</p>
+              <p className="text-2xl font-headline font-bold text-on-secondary-fixed">
+                {totalAmount === null ? '—' : formatCurrency(totalAmount)}
+              </p>
             </div>
             <div className="flex items-center gap-2 text-tertiary bg-tertiary-fixed/30 px-3 py-1 rounded-full">
               <Verified className="w-4 h-4" />
