@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { TopAppBar, BottomNavBar } from '@/components/navigation';
+import { TopAppBar } from '@/components/navigation';
 import { 
   HandCoins, 
   CreditCard, 
@@ -1056,8 +1056,7 @@ export default function ProfilePage() {
             Sair da Conta
           </button>
         </div>
-      </main>
-      <BottomNavBar />
+      </main>     
 
       {/* Success Modal */}
       <AnimatePresence>

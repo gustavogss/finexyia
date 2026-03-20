@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { TopAppBar, BottomNavBar } from '@/components/navigation';
+import { TopAppBar} from '@/components/navigation';
 import { 
   FileText as EditNote, 
   LayoutGrid as Category, 
@@ -12,8 +12,7 @@ import {
   ArrowRight as ArrowForward,
   CheckCircle2,
   Trash2,
-  Plus,
-  HandCoins
+  Plus  
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useNotifications } from '@/hooks/use-notifications';
@@ -636,8 +635,7 @@ export default function TransactionsPage() {
           onScan={handleScanResult}
         />
 
-      </main>
-      <BottomNavBar />
+      </main>     
     </div>
   );
 }

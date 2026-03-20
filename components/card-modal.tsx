@@ -3,7 +3,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, CreditCard, Trash2 } from 'lucide-react';
-import { cn } from '@/lib/utils';
 
 interface CardModalProps {
   isOpen: boolean;

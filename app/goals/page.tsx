@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { TopAppBar, BottomNavBar } from '@/components/navigation';
+import { TopAppBar } from '@/components/navigation';
 import { cn } from '@/lib/utils';
 import { 
   TrendingUp, 
@@ -178,8 +178,7 @@ export default function GoalsPage() {
             </div>
           </div>
         </section>
-      </main>
-      <BottomNavBar />
+      </main>    
     </div>
   );
 }

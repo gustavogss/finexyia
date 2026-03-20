@@ -10,8 +10,6 @@ import {
   Target as TrackChanges, 
   Award as WorkspacePremium,
   PlayCircle,
-  Sun,
-  Bell
 } from 'lucide-react';
 import { motion } from 'motion/react';
 

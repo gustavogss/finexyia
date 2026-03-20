@@ -18,7 +18,7 @@ export default function NotFound() {
           Desculpe, a página que você está procurando não existe ou foi movida.
         </p>
         <Link 
-          href="/" 
+          href="/login" 
           className="bg-primary text-on-primary px-8 py-4 rounded-2xl font-bold shadow-lg shadow-primary/20 hover:scale-105 transition-all active:scale-95"
         >
           Voltar ao Início

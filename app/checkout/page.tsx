@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { TopAppBar, BottomNavBar } from '@/components/navigation';
+import { TopAppBar } from '@/components/navigation';
 import { 
   Wifi as Contactless, 
   Banknote as Payments, 
@@ -199,8 +199,7 @@ export default function CheckoutPage() {
             Cancelar e voltar
           </button>
         </form>
-      </main>
-      <BottomNavBar />
+      </main>      
     </div>
   );
 }
