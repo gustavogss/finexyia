@@ -1,31 +1,45 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyJwt } from '@/lib/jwt';
+import { verifyJwt, type JwtPayload } from '@/lib/jwt';
+import { getRedirectForPlan } from '@/lib/plan-routing';
 
-const PUBLIC_PATHS = ['/login', '/planos'];
+const PUBLIC_ROUTES = ['/login', '/pricing', '/signup'];
+const TRIAL_ALLOWED_ROUTES = ['/pricing', '/checkout'];
 
-export function middleware(req: NextRequest) {
-  const { pathname } = req.nextUrl;
-  if (PUBLIC_PATHS.includes(pathname)) {
+export function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+  const token = request.cookies.get('token')?.value;
+  const payload = token ? (verifyJwt(token) as JwtPayload | null) : null;
+  const isVisitor = payload?.plan === 'visitante';
+
+  if (pathname === '/') {
+    if (!payload) {
+      return NextResponse.redirect(new URL('/login', request.url));
+    }
+
+    return NextResponse.redirect(new URL(getRedirectForPlan(payload.plan), request.url));
+  }
+
+  if ((pathname === '/login' || pathname === '/signup') && payload) {
+    return NextResponse.redirect(new URL(getRedirectForPlan(payload.plan), request.url));
+  }
+
+  if (PUBLIC_ROUTES.includes(pathname)) {
     return NextResponse.next();
   }
-  const token = req.cookies.get('token')?.value;
-  if (!token) {
-    return NextResponse.redirect(new URL('/login', req.url));
-  }
-  const payload = verifyJwt(token);
+
   if (!payload) {
-    return NextResponse.redirect(new URL('/login', req.url));
+    return NextResponse.redirect(new URL('/login', request.url));
   }
-  // Controle de planos
-  if (payload.plan === 'visitante') {
-    if (!payload.trialExpiresAt || new Date(payload.trialExpiresAt) < new Date()) {
-      return NextResponse.redirect(new URL('/planos', req.url));
+
+  if (isVisitor && !TRIAL_ALLOWED_ROUTES.includes(pathname)) {
+    if (pathname !== '/pricing') {
+      return NextResponse.redirect(new URL('/pricing', request.url));
     }
   }
-  // Permite acesso
+
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ['/dashboard', '/transactions', '/analysis', '/goals', '/recompensas', '/profile', '/checkout']
+  matcher: ['/((?!api|_next/static|_next/image|favicon.ico|favicon.svg).*)'],
 };

@@ -4,11 +4,13 @@ import React from 'react';
 import { Mail, Lock, Eye, Sun, Bell, TrendingUp } from 'lucide-react';
 import { motion } from 'motion/react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { GoogleIcon } from '@/components/google-icon';
+
+
 
 const loginSchema = z.object({
   email: z.string().email('E-mail inválido'),
@@ -162,12 +164,7 @@ export default function LoginPage() {
               type="button"
               className="w-full h-14 border rounded-xl flex items-center justify-center gap-2 hover:cursor-pointer transition-colors"
             >
-              <Image
-                src="/google.svg"
-                alt="Google"
-                width={20}
-                height={20}
-              />
+              <GoogleIcon />
               Entrar com Google
             </button>
 

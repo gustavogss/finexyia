@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { TopAppBar } from '@/components/top-bar';
 import { BottomNavBar } from '@/components/bottom-bar';
 import { auth, db } from '@/lib/firebase';
+import { buildPaidSubscription, buildTrialSubscription, type SubscriptionPlan } from '@/lib/subscription';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { 
@@ -22,7 +23,7 @@ import { motion } from 'motion/react';
 
 function buildSessionUrl(params: {
   userId: string;
-  plan: 'basic' | 'premium' | 'visitante';
+  plan: SubscriptionPlan;
   trial: boolean;
   trialExpiresAt: string | null;
 }) {
@@ -38,7 +39,7 @@ function buildSessionUrl(params: {
 
 export default function PricingPage() {
   const router = useRouter();
-  const [loadingPlan, setLoadingPlan] = React.useState<'basic' | 'premium' | 'visitante' | null>(null);
+  const [loadingPlan, setLoadingPlan] = React.useState<SubscriptionPlan | null>(null);
   const [error, setError] = React.useState('');
   const [authUser, setAuthUser] = React.useState<User | null>(null);
   const [isAuthReady, setIsAuthReady] = React.useState(false);
@@ -52,7 +53,7 @@ export default function PricingPage() {
     return unsubscribe;
   }, []);
 
-  const activatePlan = async (plan: 'basic' | 'premium' | 'visitante') => {
+  const activatePlan = async (plan: SubscriptionPlan) => {
     setError('');
     setLoadingPlan(plan);
 
@@ -80,22 +81,17 @@ export default function PricingPage() {
         return;
       }
 
-      await updateDoc(userRef, {
-        plan,
-        trial: plan === 'visitante',
-        trialExpiresAt: plan === 'visitante'
-          ? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
-          : null,
-        credits: plan === 'premium' ? 25 : plan === 'basic' ? 10 : 0
-      });
+      const subscriptionData = plan === 'visitante'
+        ? buildTrialSubscription()
+        : buildPaidSubscription(plan);
+
+      await updateDoc(userRef, subscriptionData);
 
       const sessionUrl = buildSessionUrl({
         userId: user.uid,
-        plan,
-        trial: plan === 'visitante',
-        trialExpiresAt: plan === 'visitante'
-          ? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
-          : null
+        plan: subscriptionData.plan,
+        trial: subscriptionData.trial,
+        trialExpiresAt: subscriptionData.trialExpiresAt
       });
       const confetti = (await import('canvas-confetti')).default;
       confetti({
@@ -154,7 +150,7 @@ export default function PricingPage() {
                 </div>
                 <div>
                   <p className="font-bold text-on-surface text-sm md:text-base">10 Créditos</p>
-                  <p className="text-[10px] md:text-xs text-secondary font-medium uppercase tracking-widest">Acesso mensal renovável</p>
+                  <p className="text-[10px] md:text-xs text-secondary font-medium uppercase tracking-widest">Plano pago com trial desativado</p>
                 </div>
               </div>
               <div className="flex items-center gap-4 px-2">
@@ -162,6 +158,12 @@ export default function PricingPage() {
                   <Check className="w-4 h-4 text-tertiary" />
                 </div>
                 <p className="font-bold text-on-surface text-sm">Relatórios Básicos</p>
+              </div>
+              <div className="flex items-center gap-4 px-2">
+                <div className="w-8 h-8 shrink-0 rounded-full bg-tertiary/10 flex items-center justify-center">
+                  <Check className="w-4 h-4 text-tertiary" />
+                </div>
+                <p className="font-bold text-on-surface text-sm">Trial encerrado ao assinar</p>
               </div>
               <div className="flex items-center gap-4 px-2">
                 <div className="w-8 h-8 shrink-0 rounded-full bg-tertiary/10 flex items-center justify-center">
@@ -214,7 +216,7 @@ export default function PricingPage() {
                 </div>
                 <div>
                   <p className="font-bold text-on-surface text-sm md:text-base">25 Créditos</p>
-                  <p className="text-[10px] md:text-xs text-secondary font-medium uppercase tracking-widest">Para operações avançadas</p>
+                  <p className="text-[10px] md:text-xs text-secondary font-medium uppercase tracking-widest">Plano pago com trial desativado</p>
                 </div>
               </div>
               <div className="flex items-center gap-4 px-2">
@@ -222,6 +224,12 @@ export default function PricingPage() {
                   <Payments className="w-4 h-4 text-tertiary" />
                 </div>
                 <p className="font-bold text-on-surface text-sm">Pix e QR Code Ilimitados</p>
+              </div>
+              <div className="flex items-center gap-4 px-2">
+                <div className="w-8 h-8 shrink-0 rounded-full bg-tertiary/10 flex items-center justify-center">
+                  <Check className="w-4 h-4 text-tertiary" />
+                </div>
+                <p className="font-bold text-on-surface text-sm">Trial encerrado ao assinar</p>
               </div>
               <div className="flex items-center gap-4 px-2">
                 <div className="w-8 h-8 shrink-0 rounded-full bg-tertiary/10 flex items-center justify-center">
@@ -251,7 +259,7 @@ export default function PricingPage() {
         <section className="bg-surface-container-low rounded-[2rem] p-8 flex flex-col md:flex-row items-center justify-between gap-8 shadow-md border border-outline-variant/10">
           <div className="flex flex-col gap-2 text-center md:text-left">
             <h4 className="font-headline text-xl md:text-2xl font-bold">Ainda na dúvida?</h4>
-            <p className="text-sm md:text-base text-secondary font-medium">Explore as funcionalidades básicas sem custo.</p>
+            <p className="text-sm md:text-base text-secondary font-medium">Teste o plano básico por 7 dias, com 0 créditos e trial ativo.</p>
           </div>
           <button
             type="button"
@@ -260,7 +268,7 @@ export default function PricingPage() {
             className="w-full md:w-auto h-14 px-10 bg-surface-container-highest/50 border border-dashed border-outline-variant/30 text-primary font-black text-[10px] sm:text-xs uppercase tracking-widest rounded-2xl hover:bg-primary/10 transition-all flex items-center justify-center gap-3 active:scale-95 cursor-pointer disabled:cursor-not-allowed disabled:opacity-70"
           >
             <PlayCircle className="w-5 h-5" />
-            {loadingPlan === 'visitante' ? 'Ativando...' : 'Testar versão gratuita'}
+            {loadingPlan === 'visitante' ? 'Ativando...' : 'Testar 7 Dias Grátis'}
           </button>
         </section>
       </main>      

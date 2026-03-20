@@ -12,6 +12,8 @@ import {
 import { motion } from 'motion/react';
 import Link from 'next/link';
 import { auth, db, googleProvider } from '@/lib/firebase';
+import { GoogleIcon } from '@/components/google-icon';
+import { buildTrialSubscription } from '@/lib/subscription';
 import {
   createUserWithEmailAndPassword,
   updateProfile,
@@ -42,22 +44,24 @@ export default function SignupPage() {
     try {
       const result = await signInWithPopup(auth, googleProvider);
       const user = result.user;
+      const userRef = doc(db, 'users', user.uid);
+      const userDoc = await getDoc(userRef);
+      const isNewUser = !userDoc.exists();
 
-      const userDoc = await getDoc(doc(db, 'users', user.uid));
-
-      if (!userDoc.exists()) {
-        await setDoc(doc(db, 'users', user.uid), {
+      if (isNewUser) {
+        await setDoc(userRef, {
           id: user.uid,
           name: user.displayName || '',
           email: user.email || '',
           photoURL: user.photoURL || '',
           createdAt: serverTimestamp(),
-          plan: 'basic',
-          credits: 0
+          ...buildTrialSubscription()
         });
       }
 
-      router.push('/dashboard');
+      const existingUserTrial = userDoc.exists() ? Boolean(userDoc.data().trial) : true;
+
+      router.push(isNewUser || existingUserTrial ? '/pricing' : '/dashboard');
     } catch {
       setError('Erro ao criar conta com Google.');
     } finally {
@@ -84,11 +88,12 @@ export default function SignupPage() {
         id: userCredential.user.uid,
         name,
         email,
+        photoURL: '',
         createdAt: serverTimestamp(),
-        plan: 'basic'
+        ...buildTrialSubscription()
       });
 
-      router.push('/dashboard');
+      router.push('/pricing');
     } catch {
       setError('Erro ao criar conta.');
     } finally {
@@ -194,6 +199,7 @@ export default function SignupPage() {
             onClick={handleGoogleSignup}
             className="w-full h-14 border rounded-xl flex items-center justify-center gap-2 hover:cursor-pointer transition-colors"
           >
+            <GoogleIcon />
             Criar com Google
           </button>
 
