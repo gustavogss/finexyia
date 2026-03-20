@@ -346,7 +346,7 @@ Para suporte, abra uma issue no GitHub ou entre em contato através de:
 
 <div align="center">
 
-**Gerencie suas finanças com clareza e segurança** 💼✨
+**Gerencie suas finanças com clareza e segurança com ajuda de nosso assistente de inteligência artificial** 💼✨
 
 Made with ❤️ by FinexyIA Team
 
