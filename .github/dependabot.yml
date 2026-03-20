@@ -1,0 +1,11 @@
+version: 2
+updates:
+  - package-ecosystem: "npm"       # Ecosystem do seu projeto (npm para Node.js)
+    directory: "/"                 # Diretório onde estão package.json e package-lock.json
+    schedule:
+      interval: "daily"            # Frequência de verificação (diária)
+    open-pull-requests-limit: 5    # Limita quantos PRs abertos ao mesmo tempo
+    allow:
+      - dependency-type: "all"     # Atualiza dependências de produção e dev
+    commit-message:
+      prefix: "fix"                # Prefixo do commit nas PRs do Dependabot
