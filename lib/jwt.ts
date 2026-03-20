@@ -6,6 +6,7 @@ export interface JwtPayload {
   userId: string;
   plan: 'basic' | 'premium' | 'visitante';
   trial: boolean;
+  trialActivated?: boolean;
   trialExpiresAt: string | null;
 }
 

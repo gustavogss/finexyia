@@ -6,6 +6,7 @@ import { TopAppBar } from '@/components/top-bar';
 import { BottomNavBar } from '@/components/bottom-bar';
 import { auth, db } from '@/lib/firebase';
 import { buildPaidSubscription, buildTrialSubscription, type SubscriptionPlan } from '@/lib/subscription';
+import { createSubscriptionEvent } from '@/lib/firestore-data';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { 
@@ -25,16 +26,16 @@ function buildSessionUrl(params: {
   userId: string;
   plan: SubscriptionPlan;
   trial: boolean;
+  trialActivated?: boolean;
   trialExpiresAt: string | null;
 }) {
-  const query = new URLSearchParams({
+  return {
     userId: params.userId,
     plan: params.plan,
-    trial: String(params.trial),
+    trial: params.trial,
+    trialActivated: Boolean(params.trialActivated),
     trialExpiresAt: params.trialExpiresAt ?? ''
-  });
-
-  return `/api/auth/session?${query.toString()}`;
+  };
 }
 
 export default function PricingPage() {
@@ -82,15 +83,22 @@ export default function PricingPage() {
       }
 
       const subscriptionData = plan === 'visitante'
-        ? buildTrialSubscription()
+        ? { ...buildTrialSubscription(), trialActivated: true }
         : buildPaidSubscription(plan);
 
       await updateDoc(userRef, subscriptionData);
+      await createSubscriptionEvent(user.uid, {
+        plan: subscriptionData.plan,
+        trial: subscriptionData.trial,
+        credits: subscriptionData.credits,
+        expiresAt: subscriptionData.trialExpiresAt
+      });
 
-      const sessionUrl = buildSessionUrl({
+      const sessionPayload = buildSessionUrl({
         userId: user.uid,
         plan: subscriptionData.plan,
         trial: subscriptionData.trial,
+        trialActivated: subscriptionData.trialActivated,
         trialExpiresAt: subscriptionData.trialExpiresAt
       });
       const confetti = (await import('canvas-confetti')).default;
@@ -101,7 +109,26 @@ export default function PricingPage() {
       });
 
       window.setTimeout(() => {
-        window.location.assign(sessionUrl);
+        fetch('/api/auth/session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify(sessionPayload)
+        })
+          .then(async (response) => {
+            if (!response.ok) {
+              throw new Error('SESSION_ERROR');
+            }
+
+            return response.json();
+          })
+          .then((data: { redirectTo: string }) => {
+            window.location.assign(data.redirectTo);
+          })
+          .catch(() => {
+            setError('Nao foi possivel concluir sua sessao agora.');
+            setLoadingPlan(null);
+          });
       }, 700);
     } catch {
       setError('Nao foi possivel ativar o plano agora.');

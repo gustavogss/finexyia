@@ -1,22 +1,22 @@
-/* eslint-disable react-hooks/set-state-in-effect */
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext } from 'react';
+import {
+  createBudget,
+  createTransaction,
+  deleteBudgetRecord,
+  deleteTransactionRecord,
+  getUserProfile,
+  subscribeToBudgets,
+  subscribeToTransactions,
+  updateBudgetRecord,
+  updateTransactionRecord,
+} from '@/lib/firestore-data';
+import { useAuthUser } from '@/lib/use-auth-user';
+import type { BudgetRecord, TransactionRecord } from '@/lib/firestore-types';
 
-export interface Transaction {
-  id: string;
-  amount: number;
-  description: string;
-  category: string;
-  date: string;
-  type: 'expense' | 'income';
-}
-
-export interface Budget {
-  id: string;
-  category: string;
-  amount: number;
-}
+export interface Transaction extends Omit<TransactionRecord, 'userId' | 'createdAt'> {}
+export interface Budget extends Omit<BudgetRecord, 'userId' | 'createdAt'> {}
 
 interface TransactionContextType {
   transactions: Transaction[];
@@ -37,111 +37,111 @@ interface TransactionContextType {
 const TransactionContext = createContext<TransactionContextType | undefined>(undefined);
 
 export function TransactionProvider({ children }: { children: React.ReactNode }) {
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [budgets, setBudgets] = useState<Budget[]>([]);
-  const [isInitialized, setIsInitialized] = useState(false);
+  const { user } = useAuthUser();
+  const [transactions, setTransactions] = React.useState<Transaction[]>([]);
+  const [budgets, setBudgets] = React.useState<Budget[]>([]);
+  const [openingBalance, setOpeningBalance] = React.useState(0);
 
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const savedTransactions = localStorage.getItem('financy_transactions');
-      const savedBudgets = localStorage.getItem('financy_budgets');
-      if (savedTransactions) {
-        try {
-          setTransactions(JSON.parse(savedTransactions));
-        } catch (e) {
-          console.error('Failed to parse transactions', e);
-        }
-      } else {
-        // Initial mock data if nothing saved
-        const mockData: Transaction[] = [
-          { id: '1', description: 'Supermercado Silva', amount: 420.50, category: 'Alimentação', date: new Date().toISOString(), type: 'expense' as const },
-          { id: '2', description: 'Salário Mensal', amount: 5500.00, category: 'Salário', date: new Date().toISOString(), type: 'income' as const },
-          { id: '3', description: 'Posto Shell', amount: 180.00, category: 'Transporte', date: new Date().toISOString(), type: 'expense' as const },
-        ].map(t => ({ ...t, id: Math.random().toString(36).substr(2, 9) }));
-        setTransactions(mockData);
-      }
-      if (savedBudgets) {
-        try {
-          setBudgets(JSON.parse(savedBudgets));
-        } catch (e) {
-          console.error('Failed to parse budgets', e);
-        }
-      }
-      setIsInitialized(true);
+  React.useEffect(() => {
+    if (!user) {
+      setTransactions([]);
+      setBudgets([]);
+      setOpeningBalance(0);
+      return;
     }
-  }, []);
 
-  // Save to localStorage
-  useEffect(() => {
-    if (isInitialized) {
-      localStorage.setItem('financy_transactions', JSON.stringify(transactions));
-      localStorage.setItem('financy_budgets', JSON.stringify(budgets));
-    }
-  }, [transactions, budgets, isInitialized]);
+    let isMounted = true;
+
+    getUserProfile(user.uid)
+      .then((profile) => {
+        if (isMounted) {
+          setOpeningBalance(profile?.openingBalance ?? 0);
+        }
+      })
+      .catch(() => {
+        if (isMounted) {
+          setOpeningBalance(0);
+        }
+      });
+
+    const unsubscribeTransactions = subscribeToTransactions(user.uid, (items) => {
+      setTransactions(items.map(({ userId, createdAt, ...item }) => item));
+    });
+
+    const unsubscribeBudgets = subscribeToBudgets(user.uid, (items) => {
+      setBudgets(items.map(({ userId, createdAt, ...item }) => item));
+    });
+
+    return () => {
+      isMounted = false;
+      unsubscribeTransactions();
+      unsubscribeBudgets();
+    };
+  }, [user]);
 
   const addTransaction = (newTx: Omit<Transaction, 'id'>) => {
-    const transaction: Transaction = {
-      ...newTx,
-      id: Math.random().toString(36).substr(2, 9),
-    };
-    setTransactions(prev => [transaction, ...prev]);
+    if (!user) {
+      return;
+    }
+
+    void createTransaction(user.uid, newTx);
   };
 
   const deleteTransaction = (id: string) => {
-    setTransactions(prev => prev.filter(t => t.id !== id));
+    void deleteTransactionRecord(id);
   };
 
   const updateTransaction = (id: string, updates: Partial<Omit<Transaction, 'id'>>) => {
-    setTransactions(prev => prev.map(t => t.id === id ? { ...t, ...updates } : t));
+    void updateTransactionRecord(id, updates);
   };
 
   const addBudget = (newBudget: Omit<Budget, 'id'>) => {
-    const budget: Budget = {
-      ...newBudget,
-      id: Math.random().toString(36).substr(2, 9),
-    };
-    setBudgets(prev => [...prev, budget]);
+    if (!user) {
+      return;
+    }
+
+    void createBudget(user.uid, newBudget);
   };
 
   const deleteBudget = (id: string) => {
-    setBudgets(prev => prev.filter(b => b.id !== id));
+    void deleteBudgetRecord(id);
   };
 
   const updateBudget = (id: string, updates: Partial<Omit<Budget, 'id'>>) => {
-    setBudgets(prev => prev.map(b => b.id === id ? { ...b, ...updates } : b));
+    void updateBudgetRecord(id, updates);
   };
 
-  const previousBalance = 2000;
-
   const totalIncome = transactions
-    .filter(t => t.type === 'income')
+    .filter((t) => t.type === 'income')
     .reduce((acc, t) => acc + t.amount, 0);
 
   const totalExpenses = transactions
-    .filter(t => t.type === 'expense')
+    .filter((t) => t.type === 'expense')
     .reduce((acc, t) => acc + t.amount, 0);
 
   const totalReservedBudget = budgets.reduce((acc, b) => acc + b.amount, 0);
 
-  const balance = previousBalance + totalIncome - totalExpenses;
+  const balance = openingBalance + totalIncome - totalExpenses;
   const availableIncome = balance - totalReservedBudget;
 
   return (
-    <TransactionContext.Provider value={{ 
-      transactions, 
-      addTransaction, 
-      deleteTransaction, 
-      updateTransaction, 
-      balance, 
-      totalIncome, 
-      totalExpenses,
-      totalReservedBudget,
-      availableIncome,
-      budgets,
-      addBudget,
-      deleteBudget,
-      updateBudget
-    }}>
+    <TransactionContext.Provider
+      value={{
+        transactions,
+        addTransaction,
+        deleteTransaction,
+        updateTransaction,
+        balance,
+        totalIncome,
+        totalExpenses,
+        totalReservedBudget,
+        availableIncome,
+        budgets,
+        addBudget,
+        deleteBudget,
+        updateBudget,
+      }}
+    >
       {children}
     </TransactionContext.Provider>
   );

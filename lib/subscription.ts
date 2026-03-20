@@ -10,6 +10,7 @@ export function buildTrialSubscription() {
   return {
     plan: 'basic' as const,
     trial: true,
+    trialActivated: false,
     trialExpiresAt: getTrialExpiresAtIso(),
     credits: 0
   };
@@ -19,6 +20,7 @@ export function buildPaidSubscription(plan: Extract<SubscriptionPlan, 'basic' | 
   return {
     plan,
     trial: false,
+    trialActivated: true,
     trialExpiresAt: null,
     credits: plan === 'premium' ? 25 : 10
   };

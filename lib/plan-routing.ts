@@ -1,11 +1,18 @@
 import type { JwtPayload } from '@/lib/jwt';
 
-export function getRedirectForPlan(plan?: JwtPayload['plan'] | null) {
-  switch (plan) {
+export function getRedirectForPlan(payload?: Pick<JwtPayload, 'plan' | 'trial' | 'trialActivated'> | null) {
+  if (!payload) {
+    return '/login';
+  }
+
+  if (payload.trial) {
+    return '/';
+  }
+
+  switch (payload.plan) {
     case 'basic':
-      return '/dashboard/basic';
     case 'premium':
-      return '/dashboard/premium';
+      return '/';
     case 'visitante':
     default:
       return '/pricing';

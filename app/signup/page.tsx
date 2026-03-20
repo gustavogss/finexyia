@@ -14,6 +14,7 @@ import Link from 'next/link';
 import { auth, db, googleProvider } from '@/lib/firebase';
 import { GoogleIcon } from '@/components/google-icon';
 import { buildTrialSubscription } from '@/lib/subscription';
+import { buildDefaultUserFields } from '@/lib/firestore-data';
 import {
   createUserWithEmailAndPassword,
   updateProfile,
@@ -55,13 +56,14 @@ export default function SignupPage() {
           email: user.email || '',
           photoURL: user.photoURL || '',
           createdAt: serverTimestamp(),
+          ...buildDefaultUserFields(),
           ...buildTrialSubscription()
         });
       }
 
       const existingUserTrial = userDoc.exists() ? Boolean(userDoc.data().trial) : true;
 
-      router.push(isNewUser || existingUserTrial ? '/pricing' : '/dashboard');
+      router.push(isNewUser || existingUserTrial ? '/pricing' : '/');
     } catch {
       setError('Erro ao criar conta com Google.');
     } finally {
@@ -90,6 +92,7 @@ export default function SignupPage() {
         email,
         photoURL: '',
         createdAt: serverTimestamp(),
+        ...buildDefaultUserFields(),
         ...buildTrialSubscription()
       });
 

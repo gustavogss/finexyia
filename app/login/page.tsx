@@ -9,6 +9,9 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { GoogleIcon } from '@/components/google-icon';
+import { auth, db, googleProvider } from '@/lib/firebase';
+import { signInWithEmailAndPassword, signInWithPopup, signOut } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
 
 
 
@@ -18,6 +21,27 @@ const loginSchema = z.object({
 });
 
 type LoginForm = z.infer<typeof loginSchema>;
+
+async function createAppSession(payload: {
+  userId: string;
+  plan: 'basic' | 'premium' | 'visitante';
+  trial: boolean;
+  trialActivated: boolean;
+  trialExpiresAt: string;
+}) {
+  const response = await fetch('/api/auth/session', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify(payload)
+  });
+
+  if (!response.ok) {
+    throw new Error('SESSION_ERROR');
+  }
+
+  return response.json() as Promise<{ success: true; redirectTo: string }>;
+}
 
 export default function LoginPage() {
   const router = useRouter();
@@ -31,25 +55,77 @@ export default function LoginPage() {
   });
 
   const [error, setError] = React.useState('');
+  const [googleLoading, setGoogleLoading] = React.useState(false);
 
   const onSubmit = async (data: LoginForm) => {
     setError('');
 
     try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
+      const credential = await signInWithEmailAndPassword(auth, data.email, data.password);
+      const userRef = doc(db, 'users', credential.user.uid);
+      const userDoc = await getDoc(userRef);
+
+      if (!userDoc.exists()) {
+        await signOut(auth);
+        setError('Conta não cadastrada no banco. Crie sua conta primeiro.');
+        return;
+      }
+
+      const userData = userDoc.data();
+      const trialExpiresAt =
+        typeof userData.trialExpiresAt === 'string'
+          ? userData.trialExpiresAt
+          : userData.trialExpiresAt?.toDate?.().toISOString?.() ?? '';
+
+      const session = await createAppSession({
+        userId: credential.user.uid,
+        plan: userData.plan ?? 'basic',
+        trial: Boolean(userData.trial),
+        trialActivated: Boolean(userData.trialActivated),
+        trialExpiresAt
       });
 
-      if (res.ok) {
-        router.push('/dashboard');
-      } else {
-        const json = await res.json();
-        setError(json.error || 'Erro ao fazer login.');
-      }
+      window.location.assign(session.redirectTo);
     } catch {
-      setError('Erro ao conectar ao servidor.');
+      setError('E-mail ou senha inválidos.');
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    setError('');
+    setGoogleLoading(true);
+
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      const user = result.user;
+      const userRef = doc(db, 'users', user.uid);
+      const userDoc = await getDoc(userRef);
+
+      if (!userDoc.exists()) {
+        await signOut(auth);
+        setError('Conta Google não cadastrada. Crie sua conta primeiro.');
+        return;
+      }
+
+      const userData = userDoc.data();
+      const trialExpiresAt =
+        typeof userData.trialExpiresAt === 'string'
+          ? userData.trialExpiresAt
+          : userData.trialExpiresAt?.toDate?.().toISOString?.() ?? '';
+
+      const session = await createAppSession({
+        userId: user.uid,
+        plan: userData.plan ?? 'basic',
+        trial: Boolean(userData.trial),
+        trialActivated: Boolean(userData.trialActivated),
+        trialExpiresAt
+      });
+
+      window.location.assign(session.redirectTo);
+    } catch {
+      setError('Erro ao entrar com Google.');
+    } finally {
+      setGoogleLoading(false);
     }
   };
 
@@ -162,10 +238,12 @@ export default function LoginPage() {
             {/* Social (placeholder) */}
             <button
               type="button"
+              onClick={handleGoogleLogin}
+              disabled={googleLoading}
               className="w-full h-14 border rounded-xl flex items-center justify-center gap-2 hover:cursor-pointer transition-colors"
             >
               <GoogleIcon />
-              Entrar com Google
+              {googleLoading ? 'Entrando com Google...' : 'Entrar com Google'}
             </button>
 
             <div className="text-center">
