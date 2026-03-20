@@ -161,7 +161,7 @@ export default function DashboardPage() {
     }
 
     return Math.ceil(remainingMs / (1000 * 60 * 60 * 24));
-  }, [sessionState]);
+  }, [sessionState, nowMs]);
 
   return (
     <div className="min-h-screen pb-24">
