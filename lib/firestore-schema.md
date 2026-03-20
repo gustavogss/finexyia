@@ -82,6 +82,21 @@
   - `priceMonthlyCents` (number)
   - `credits` (number)
 
+## config/rewards
+- `usage`
+  - `thresholds` (number[])
+  - `rewards` (number[])
+- `plan`
+  - `basicReward` (number)
+  - `premiumReward` (number)
+- `engagement`
+  - `firstIncomeReward` (number)
+  - `firstExpenseReward` (number)
+  - `balancedThreshold` (number)
+  - `balancedReward` (number)
+- `goals`
+  - `completeGoalReward` (number)
+
 ## Relacionamentos
 - `users.id` -> dono de todas as demais coleções
 - `transactions.userId` -> `users.id`

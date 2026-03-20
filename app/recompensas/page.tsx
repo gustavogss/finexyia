@@ -19,6 +19,7 @@ import { useAuthUser } from '@/lib/use-auth-user';
 import { getUserProfile, subscribeToGoals } from '@/lib/firestore-data';
 import type { GoalRecord, UserProfile } from '@/lib/firestore-types';
 import { getPlansConfig } from '@/lib/plans-config';
+import { getRewardsConfig, type RewardsConfig } from '@/lib/rewards-config';
 
 type RewardTask = {
   id: string;
@@ -44,6 +45,7 @@ export default function RewardsPage() {
   const [profile, setProfile] = React.useState<UserProfile | null>(null);
   const [goals, setGoals] = React.useState<GoalRecord[]>([]);
   const [premiumCreditsGoal, setPremiumCreditsGoal] = React.useState<number | null>(null);
+  const [rewardsConfig, setRewardsConfig] = React.useState<RewardsConfig | null>(null);
 
   React.useEffect(() => {
     if (!user) {
@@ -63,11 +65,21 @@ export default function RewardsPage() {
 
   const transactionCount = transactions.length;
   const hasCompletedGoal = goals.some((g) => g.targetAmount > 0 && g.currentAmount >= g.targetAmount);
-  const usageTasks: RewardTask[] = [
-    { id: 'u1', title: 'Registrar 1 transação', description: 'Sua primeira transação no app', reward: 1, progress: Math.min(transactionCount, 1), total: 1 },
-    { id: 'u2', title: 'Registrar 10 transações', description: 'Mantenha seu controle em dia', reward: 2, progress: Math.min(transactionCount, 10), total: 10 },
-    { id: 'u3', title: 'Registrar 30 transações', description: 'Domine suas finanças', reward: 3, progress: Math.min(transactionCount, 30), total: 30 },
-  ];
+  const usageTasks: RewardTask[] = rewardsConfig
+    ? rewardsConfig.usage.thresholds.map((threshold, idx) => ({
+        id: `u${idx + 1}`,
+        title: `Registrar ${threshold} transação${threshold > 1 ? 'ões' : ''}`,
+        description:
+          idx === 0
+            ? 'Sua primeira transação no app'
+            : idx === 1
+              ? 'Mantenha seu controle em dia'
+              : 'Domine suas finanças',
+        reward: rewardsConfig.usage.rewards[idx] ?? 0,
+        progress: Math.min(transactionCount, threshold),
+        total: threshold,
+      }))
+    : [];
 
   const categories: RewardCategory[] = [
     {
@@ -86,8 +98,22 @@ export default function RewardsPage() {
       color: 'text-indigo-500 bg-indigo-500/10',
       tasks: [
         { id: 'p1', title: 'Conta em Trial Ativo', description: 'Teste grátis liberado', reward: 0, progress: profile?.trial ? 1 : 0, total: 1 },
-        { id: 'p2', title: 'Plano Básico Ativo', description: 'Assinatura básica confirmada', reward: 10, progress: profile?.plan === 'basic' && !profile?.trial ? 1 : 0, total: 1 },
-        { id: 'p3', title: 'Plano Premium Ativo', description: 'Assinatura premium confirmada', reward: 25, progress: profile?.plan === 'premium' && !profile?.trial ? 1 : 0, total: 1 },
+        {
+          id: 'p2',
+          title: 'Plano Básico Ativo',
+          description: 'Assinatura básica confirmada',
+          reward: rewardsConfig?.plan.basicReward ?? 0,
+          progress: profile?.plan === 'basic' && !profile?.trial ? 1 : 0,
+          total: 1
+        },
+        {
+          id: 'p3',
+          title: 'Plano Premium Ativo',
+          description: 'Assinatura premium confirmada',
+          reward: rewardsConfig?.plan.premiumReward ?? 0,
+          progress: profile?.plan === 'premium' && !profile?.trial ? 1 : 0,
+          total: 1
+        },
       ],
     },
     {
@@ -101,7 +127,7 @@ export default function RewardsPage() {
           id: 'e1',
           title: 'Primeiro fluxo positivo',
           description: 'Registrar pelo menos uma receita',
-          reward: 1,
+          reward: rewardsConfig?.engagement.firstIncomeReward ?? 0,
           progress: transactions.some((item) => item.type === 'income') ? 1 : 0,
           total: 1,
         },
@@ -109,17 +135,17 @@ export default function RewardsPage() {
           id: 'e2',
           title: 'Primeiro gasto registrado',
           description: 'Registrar pelo menos uma despesa',
-          reward: 1,
+          reward: rewardsConfig?.engagement.firstExpenseReward ?? 0,
           progress: transactions.some((item) => item.type === 'expense') ? 1 : 0,
           total: 1,
         },
         {
           id: 'e3',
           title: 'Controle equilibrado',
-          description: 'Registrar 5 receitas ou despesas',
-          reward: 2,
-          progress: Math.min(transactionCount, 5),
-          total: 5,
+          description: `Registrar ${rewardsConfig?.engagement.balancedThreshold ?? 0} receitas ou despesas`,
+          reward: rewardsConfig?.engagement.balancedReward ?? 0,
+          progress: Math.min(transactionCount, rewardsConfig?.engagement.balancedThreshold ?? 0),
+          total: rewardsConfig?.engagement.balancedThreshold ?? 0,
         },
       ],
     },
@@ -134,7 +160,7 @@ export default function RewardsPage() {
           id: 'f1',
           title: 'Metas financeiras',
           description: 'Meta será concluída ao atingir o alvo salvo',
-          reward: 2,
+          reward: rewardsConfig?.goals.completeGoalReward ?? 0,
           progress: hasCompletedGoal ? 1 : 0,
           total: 1
         },
@@ -158,6 +184,22 @@ export default function RewardsPage() {
       .catch(() => {
         if (!isMounted) return;
         setPremiumCreditsGoal(null);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  React.useEffect(() => {
+    let isMounted = true;
+    getRewardsConfig()
+      .then((cfg) => {
+        if (!isMounted) return;
+        setRewardsConfig(cfg);
+      })
+      .catch(() => {
+        if (!isMounted) return;
+        setRewardsConfig(null);
       });
     return () => {
       isMounted = false;
