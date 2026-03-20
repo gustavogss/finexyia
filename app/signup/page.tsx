@@ -1,143 +1,215 @@
 'use client';
 
-import React from 'react';
-import { 
-  Mail, 
-  Lock, 
-  Eye as Visibility, 
-  ArrowRight as ArrowForward, 
-  ShieldCheck, 
-  ShieldCheck as VerifiedUser,
+import React, { useState } from 'react';
+import {
+  Lock,
+  Eye,
+  ArrowRight,
   Sun,
-  Bell
+  Bell,
+  TrendingUp,
+  ShieldCheck
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import Link from 'next/link';
+import { auth, db, googleProvider } from '@/lib/firebase';
+import {
+  createUserWithEmailAndPassword,
+  updateProfile,
+  signInWithPopup
+} from 'firebase/auth';
+import {
+  doc,
+  setDoc,
+  getDoc,
+  serverTimestamp
+} from 'firebase/firestore';
+import { useRouter } from 'next/navigation';
 
 export default function SignupPage() {
+  const router = useRouter();
+
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleGoogleSignup = async () => {
+    setError('');
+    setLoading(true);
+
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      const user = result.user;
+
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
+
+      if (!userDoc.exists()) {
+        await setDoc(doc(db, 'users', user.uid), {
+          id: user.uid,
+          name: user.displayName || '',
+          email: user.email || '',
+          photoURL: user.photoURL || '',
+          createdAt: serverTimestamp(),
+          plan: 'basic',
+          credits: 0
+        });
+      }
+
+      router.push('/dashboard');
+    } catch {
+      setError('Erro ao criar conta com Google.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+
+    if (!name.trim()) return setError('Informe seu nome.');
+    if (password.length < 8) return setError('Senha mínimo 8 caracteres.');
+    if (password !== confirmPassword) return setError('Senhas não coincidem.');
+
+    setLoading(true);
+
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+
+      await updateProfile(userCredential.user, { displayName: name });
+
+      await setDoc(doc(db, 'users', userCredential.user.uid), {
+        id: userCredential.user.uid,
+        name,
+        email,
+        createdAt: serverTimestamp(),
+        plan: 'basic'
+      });
+
+      router.push('/dashboard');
+    } catch {
+      setError('Erro ao criar conta.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <div className="bg-background font-body text-on-background min-h-screen flex flex-col">
-      {/* Top Bar Navigation */}
-      <nav className="h-16 flex items-center justify-between px-6 bg-on-secondary-fixed sticky top-0 z-50">
-        <div className="flex items-center gap-4">
-          <Sun className="w-6 h-6 text-on-primary" />
-        </div>
-        <div className="text-on-primary font-headline font-bold tracking-widest text-lg">FINANCY</div>
-        <div className="flex items-center gap-4">
-          <Bell className="w-6 h-6 text-on-primary" />
-        </div>
+    <div className="bg-surface min-h-screen flex flex-col text-on-background">
+      
+      {/* Navbar */}
+      <nav className="h-16 flex items-center justify-between px-6 bg-on-secondary-fixed sticky top-0">
+        <Sun className="w-6 h-6 text-on-primary" />
+        <div className="font-bold text-lg tracking-widest">FINANCY</div>
+        <Bell className="w-6 h-6 text-on-primary" />
       </nav>
 
-      <main className="flex-grow flex items-center justify-center p-6 relative overflow-hidden">
-        {/* Abstract Architectural Background Elements */}
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-secondary-container opacity-20 blur-3xl"></div>
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-primary-container opacity-10 blur-3xl"></div>
+      {/* Conteúdo */}
+      <main className="flex-grow flex flex-col items-center justify-center p-6">
 
-        <div className="w-full max-w-md z-10">
-          {/* Branding/Hero Section */}
-          <motion.div 
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-12 text-center"
-          >
-            <h1 className="font-headline font-bold text-on-background mb-4 tracking-tight text-4xl">Comece agora.</h1>
-            <p className="text-secondary font-medium text-lg px-8">Organize sua vida financeira com clareza editorial e segurança absoluta.</p>
-          </motion.div>
-
-          {/* Form Card */}
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-surface-container-lowest rounded-xl p-8 cloud-shadow"
-          >
-            <form className="space-y-6">
-              {/* Nome Field */}
-              <div className="space-y-2">
-                <label className="block text-sm font-semibold text-on-secondary-fixed-variant ml-1" htmlFor="name">Nome completo</label>
-                <div className="relative">
-                  <input 
-                    className="w-full h-14 bg-surface-container-high border-none rounded-lg px-4 pt-1 focus:ring-2 focus:ring-primary/40 text-on-surface placeholder:text-outline-variant transition-all" 
-                    id="name" 
-                    placeholder="Seu nome" 
-                    type="text"
-                  />
-                </div>
-              </div>
-              {/* Email Field */}
-              <div className="space-y-2">
-                <label className="block text-sm font-semibold text-on-secondary-fixed-variant ml-1" htmlFor="email">E-mail</label>
-                <div className="relative">
-                  <input 
-                    className="w-full h-14 bg-surface-container-high border-none rounded-lg px-4 pt-1 focus:ring-2 focus:ring-primary/40 text-on-surface placeholder:text-outline-variant transition-all" 
-                    id="email" 
-                    placeholder="exemplo@email.com" 
-                    type="email"
-                  />
-                </div>
-              </div>
-              {/* Senha Field */}
-              <div className="space-y-2">
-                <label className="block text-sm font-semibold text-on-secondary-fixed-variant ml-1" htmlFor="password">Senha</label>
-                <div className="relative flex items-center">
-                  <input 
-                    className="w-full h-14 bg-surface-container-high border-none rounded-lg px-4 pt-1 focus:ring-2 focus:ring-primary/40 text-on-surface placeholder:text-outline-variant transition-all" 
-                    id="password" 
-                    placeholder="Mínimo 8 caracteres" 
-                    type="password"
-                  />
-                  <Visibility className="absolute right-4 text-outline cursor-pointer w-5 h-5" />
-                </div>
-              </div>
-              {/* Confirmar Senha Field */}
-              <div className="space-y-2">
-                <label className="block text-sm font-semibold text-on-secondary-fixed-variant ml-1" htmlFor="confirm-password">Confirmar senha</label>
-                <div className="relative flex items-center">
-                  <input 
-                    className="w-full h-14 bg-surface-container-high border-none rounded-lg px-4 pt-1 focus:ring-2 focus:ring-primary/40 text-on-surface placeholder:text-outline-variant transition-all" 
-                    id="confirm-password" 
-                    placeholder="Repita sua senha" 
-                    type="password"
-                  />
-                  <Lock className="absolute right-4 text-outline cursor-pointer w-5 h-5" />
-                </div>
-              </div>
-              {/* Submit Button */}
-              <div className="pt-4">
-                <Link 
-                  href="/"
-                  className="w-full h-14 bg-orange-gradient text-on-primary font-headline font-bold text-lg rounded-xl shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2"
-                >
-                  Criar Conta
-                  <ArrowForward className="w-5 h-5" />
-                </Link>
-              </div>
-            </form>
-            {/* Footer of Form */}
-            <div className="mt-8 pt-8 border-t border-surface-container text-center">
-              <p className="text-secondary text-sm">
-                Já possui uma conta? 
-                <Link className="text-primary font-bold hover:underline ml-1" href="/login">Entrar</Link>
-              </p>
-            </div>
-          </motion.div>
-
-          {/* Social Proof / Security Badge */}
-          <div className="mt-12 flex items-center justify-center gap-6 opacity-60">
-            <div className="flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4" />
-              <span className="text-xs font-bold tracking-widest uppercase">Segurança 256-bit</span>
-            </div>
-            <div className="h-4 w-[1px] bg-outline-variant"></div>
-            <div className="flex items-center gap-2">
-              <VerifiedUser className="w-4 h-4" />
-              <span className="text-xs font-bold tracking-widest uppercase">LGPD Compliant</span>
-            </div>
+        {/* Logo */}
+        <div className="flex flex-col items-center mb-10">
+          <div className="w-16 h-16 bg-orange-500 rounded-2xl flex items-center justify-center shadow-lg">
+            <TrendingUp className="w-10 h-10 text-on-primary" />
           </div>
+          <h1 className="text-3xl font-bold mt-4">FINANCY</h1>
         </div>
+
+        {/* Card */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="w-full max-w-md bg-surface-container-lowest rounded-2xl p-8 shadow-xl space-y-6"
+        >
+          <div className="text-center">
+            <h2 className="text-2xl font-bold">Criar conta</h2>
+            <p className="text-sm text-secondary">
+              Comece a organizar sua vida financeira
+            </p>
+          </div>
+
+          <form onSubmit={handleSignup} className="space-y-4">
+
+            <input
+              placeholder="Nome completo"
+              value={name}
+              onChange={e => setName(e.target.value)}
+              className="w-full h-14 px-4 rounded-lg bg-surface-container-high"
+            />
+
+            <input
+              placeholder="Email"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              className="w-full h-14 px-4 rounded-lg bg-surface-container-high"
+            />
+
+            <div className="relative">
+              <input
+                type="password"
+                placeholder="Senha"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                className="w-full h-14 px-4 rounded-lg bg-surface-container-high"
+              />
+              <Eye className="absolute right-4 top-1/2 -translate-y-1/2" />
+            </div>
+
+            <div className="relative">
+              <input
+                type="password"
+                placeholder="Confirmar senha"
+                value={confirmPassword}
+                onChange={e => setConfirmPassword(e.target.value)}
+                className="w-full h-14 px-4 rounded-lg bg-surface-container-high"
+              />
+              <Lock className="absolute right-4 top-1/2 -translate-y-1/2" />
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full h-14 bg-green-700 text-white font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-green-600"
+            >
+              {loading ? 'Criando...' : (
+                <>
+                  Criar conta <ArrowRight className="w-5 h-5" />
+                </>
+              )}
+            </button>
+
+            {error && (
+              <p className="text-red-500 text-sm text-center">{error}</p>
+            )}
+          </form>
+
+          {/* Divider */}
+          <div className="text-center text-xs text-secondary">
+            ou continue com
+          </div>
+
+          <button
+            onClick={handleGoogleSignup}
+            className="w-full h-14 border rounded-xl flex items-center justify-center gap-2"
+          >
+            Criar com Google
+          </button>
+
+          <p className="text-center text-sm">
+            Já tem conta?
+            <Link href="/login" className="text-primary ml-1">
+              Entrar
+            </Link>
+          </p>
+        </motion.div>      
+
       </main>
 
-      <footer className="p-8 text-center text-outline-variant text-xs font-medium tracking-wide">
-        © 2024 FINANCY. Todos os direitos reservados.
+      <footer className="text-center text-xs p-4 text-secondary">
+        © 2026 FINANCY
       </footer>
     </div>
   );

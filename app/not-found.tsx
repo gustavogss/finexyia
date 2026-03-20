@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { TopAppBar, BottomNavBar } from '@/components/navigation';
+import { TopAppBar } from '@/components/navigation';
 import { FileQuestion } from 'lucide-react';
 
 export default function NotFound() {
@@ -24,7 +24,6 @@ export default function NotFound() {
           Voltar ao Início
         </Link>
       </main>
-      <BottomNavBar />
     </div>
   );
 }

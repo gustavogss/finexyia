@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { TopAppBar, BottomNavBar } from '@/components/navigation';
+import { TopAppBar } from '@/components/navigation';
 import { cn, formatCurrency } from '@/lib/utils';
 import { 
   TrendingDown, 
@@ -324,7 +324,7 @@ export default function DashboardPage() {
         </section>
 
       </main>
-      <BottomNavBar />
+      
       <AssistantModal isOpen={isAssistantOpen} onClose={() => setIsAssistantOpen(false)} />
     </div>
   );
