@@ -339,8 +339,8 @@ Para suporte, abra uma issue no GitHub ou entre em contato através de:
 ## 👨‍💻 Desenvolvedor
 
 **Gustavo Silva**
-- GitHub: [@gustavo](https://github.com/gustavo)
-- Email: gustavogss.jp@gmail.com
+- GitHub: [@gustavogss](https://github.com/gustavogss)
+- Email: contato@gustavosouza.dev.br
 
 ---
 
