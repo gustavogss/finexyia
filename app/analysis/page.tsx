@@ -12,12 +12,12 @@ import {
   Car,
   Home,
   BrainCircuit,
-  ChevronRight,
   ShoppingBag,
   Heart,
   Briefcase,
   Layers
 } from 'lucide-react';
+
 import { motion } from 'motion/react';
 import { useTransactions } from '@/lib/transactions-context';
 import { 
@@ -32,6 +32,7 @@ import {
   YAxis, 
   CartesianGrid 
 } from 'recharts';
+
 import { GoogleGenAI, Type } from "@google/genai";
 
 const getCategoryIcon = (category: string) => {
