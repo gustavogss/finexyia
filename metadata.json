@@ -1,0 +1,5 @@
+{
+  "name": "FinexyIA",
+  "description": "Gestão financeira pessoal com clareza editorial e segurança absoluta.",
+  "requestFramePermissions": ["camera"]
+}
