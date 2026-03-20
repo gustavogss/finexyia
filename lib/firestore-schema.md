@@ -73,6 +73,15 @@
 - `expiresAt` (timestamp | null)
 - `createdAt` (timestamp)
 
+## config/plans
+- `trialDays` (number)
+- `basic`
+  - `priceMonthlyCents` (number)
+  - `credits` (number)
+- `premium`
+  - `priceMonthlyCents` (number)
+  - `credits` (number)
+
 ## Relacionamentos
 - `users.id` -> dono de todas as demais coleções
 - `transactions.userId` -> `users.id`
