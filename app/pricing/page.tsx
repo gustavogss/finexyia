@@ -1,7 +1,11 @@
 'use client';
 
 import React from 'react';
+import { useRouter } from 'next/navigation';
 import { TopAppBar } from '@/components/navigation';
+import { auth, db } from '@/lib/firebase';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { onAuthStateChanged, type User } from 'firebase/auth';
 import { 
   Check, 
   X, 
@@ -10,22 +14,120 @@ import {
   Target as TrackChanges, 
   Award as WorkspacePremium,
   PlayCircle,
+  Sun,
+  Bell
 } from 'lucide-react';
 import { motion } from 'motion/react';
 
+function buildSessionUrl(params: {
+  userId: string;
+  plan: 'basic' | 'premium' | 'visitante';
+  trial: boolean;
+  trialExpiresAt: string | null;
+}) {
+  const query = new URLSearchParams({
+    userId: params.userId,
+    plan: params.plan,
+    trial: String(params.trial),
+    trialExpiresAt: params.trialExpiresAt ?? ''
+  });
+
+  return `/api/auth/session?${query.toString()}`;
+}
+
 export default function PricingPage() {
+  const router = useRouter();
+  const [loadingPlan, setLoadingPlan] = React.useState<'basic' | 'premium' | 'visitante' | null>(null);
+  const [error, setError] = React.useState('');
+  const [authUser, setAuthUser] = React.useState<User | null>(null);
+  const [isAuthReady, setIsAuthReady] = React.useState(false);
+
+  React.useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setAuthUser(user);
+      setIsAuthReady(true);
+    });
+
+    return unsubscribe;
+  }, []);
+
+  const activatePlan = async (plan: 'basic' | 'premium' | 'visitante') => {
+    setError('');
+    setLoadingPlan(plan);
+
+    try {
+      if (!isAuthReady) {
+        setError('Estamos preparando sua sessao. Tente novamente em alguns segundos.');
+        setLoadingPlan(null);
+        return;
+      }
+
+      const user = authUser;
+
+      if (!user) {
+        setError('Sua sessao expirou. Entre novamente para continuar.');
+        setLoadingPlan(null);
+        router.push('/login');
+        return;
+      }
+
+      const userRef = doc(db, 'users', user.uid);
+      const userDoc = await getDoc(userRef);
+
+      if (!userDoc.exists()) {
+        setError('Sua conta nao foi localizada. Entre novamente para continuar.');
+        return;
+      }
+
+      await updateDoc(userRef, {
+        plan,
+        trial: plan === 'visitante',
+        trialExpiresAt: plan === 'visitante'
+          ? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+          : null,
+        credits: plan === 'premium' ? 25 : plan === 'basic' ? 10 : 0
+      });
+
+      const sessionUrl = buildSessionUrl({
+        userId: user.uid,
+        plan,
+        trial: plan === 'visitante',
+        trialExpiresAt: plan === 'visitante'
+          ? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+          : null
+      });
+      const confetti = (await import('canvas-confetti')).default;
+      confetti({
+        particleCount: 140,
+        spread: 90,
+        origin: { y: 0.6 }
+      });
+
+      window.setTimeout(() => {
+        window.location.assign(sessionUrl);
+      }, 700);
+    } catch {
+      setError('Nao foi possivel ativar o plano agora.');
+      setLoadingPlan(null);
+      return;
+    }
+  };
+
   return (
     <div className="bg-surface font-body text-on-surface flex flex-col min-h-screen">
       <TopAppBar />
       <main className="flex-grow w-full max-w-5xl mx-auto px-4 sm:px-6 py-8 md:py-12">
         {/* Editorial Header Section */}
-        <section className="mb-8 md:mb-16 text-center lg:text-left">
-          <h2 className="font-headline text-3xl sm:text-4xl md:text-5xl font-bold mb-4 text-on-background leading-tight max-w-2xl mx-auto lg:mx-0">
+        <section className="mb-8 md:mb-16 text-center">
+          <h2 className="font-headline text-3xl sm:text-4xl md:text-5xl font-bold mb-4 text-on-background leading-tight max-w-2xl mx-auto">
             Escolha o plano ideal para sua evolução financeira.
           </h2>
-          <p className="text-secondary font-medium text-base md:text-lg max-w-xl mx-auto lg:mx-0">
+          <p className="text-secondary font-medium text-base md:text-lg max-w-xl mx-auto">
             Ferramentas arquitetadas para oferecer clareza, controle e crescimento real do seu patrimônio.
           </p>
+          {error && (
+            <p className="text-sm text-red-500 mt-4">{error}</p>
+          )}
         </section>
 
         {/* Pricing Grid */}
@@ -35,10 +137,10 @@ export default function PricingPage() {
             whileHover={{ y: -8, boxShadow: "0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)" }}
             className="bg-surface-container-low rounded-[2rem] p-8 sm:p-10 flex flex-col transition-all shadow-md border border-outline-variant/10 relative group"
           >
-            <div className="mb-8">
+            <div className="mb-8 text-center md:text-left">
               <span className="text-[10px] md:text-xs font-black tracking-widest uppercase text-secondary mb-3 block opacity-70">Essencial</span>
               <h3 className="font-headline text-2xl md:text-3xl font-bold mb-2">Plano Básico</h3>
-              <div className="flex items-baseline gap-1 mt-4">
+              <div className="flex items-baseline justify-center md:justify-start gap-1 mt-4">
                 <span className="text-xs md:text-sm font-bold text-on-surface-variant">R$</span>
                 <span className="text-3xl sm:text-4xl md:text-5xl font-headline font-black">29,90</span>
                 <span className="text-secondary font-medium text-sm md:text-base">/mês</span>
@@ -73,8 +175,13 @@ export default function PricingPage() {
                 <p className="font-medium text-sm">Pix e QR Code ilimitados</p>
               </div>
             </div>
-            <button className="w-full py-4 bg-secondary text-on-secondary font-black text-[10px] sm:text-xs uppercase tracking-widest rounded-2xl shadow-lg shadow-secondary/20 hover:scale-[1.02] active:scale-95 transition-all">
-              Selecionar Básico
+            <button
+              type="button"
+              onClick={() => activatePlan('basic')}
+              disabled={loadingPlan !== null || !isAuthReady}
+              className="w-full py-4 bg-secondary text-on-secondary font-black text-[10px] sm:text-xs uppercase tracking-widest rounded-2xl shadow-lg shadow-secondary/20 hover:scale-[1.02] active:scale-95 transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              {loadingPlan === 'basic' ? 'Ativando...' : 'Selecionar Básico'}
             </button>
           </motion.div>
 
@@ -88,12 +195,12 @@ export default function PricingPage() {
                 RECOMENDADO
               </div>
             </div>
-            <div className="mb-8">
+            <div className="mb-8 text-center md:text-left">
               <span className="text-[10px] md:text-xs font-black tracking-widest uppercase text-primary mb-3 block">Ilimitado</span>
-              <h3 className="font-headline text-2xl md:text-3xl font-bold mb-2 flex items-center gap-2">
+              <h3 className="font-headline text-2xl md:text-3xl font-bold mb-2 flex items-center justify-center md:justify-start gap-2">
                 Plano Premium <WorkspacePremium className="w-6 h-6 fill-primary text-primary" />
               </h3>
-              <div className="flex items-baseline gap-1 mt-4">
+              <div className="flex items-baseline justify-center md:justify-start gap-1 mt-4">
                 <span className="text-xs md:text-sm font-bold text-on-surface-variant">R$</span>
                 <span className="text-3xl sm:text-4xl md:text-5xl font-headline font-black text-primary">54,90</span>
                 <span className="text-secondary font-medium text-sm md:text-base">/mês</span>
@@ -128,8 +235,13 @@ export default function PricingPage() {
                 <p className="font-bold text-on-surface text-sm">Recompensas Exclusivas</p>
               </div>
             </div>
-            <button className="w-full py-4 bg-primary text-on-primary font-black text-[10px] sm:text-xs uppercase tracking-widest rounded-2xl shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all">
-              Assinar Premium
+            <button
+              type="button"
+              onClick={() => activatePlan('premium')}
+              disabled={loadingPlan !== null || !isAuthReady}
+              className="w-full py-4 bg-primary text-on-primary font-black text-[10px] sm:text-xs uppercase tracking-widest rounded-2xl shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              {loadingPlan === 'premium' ? 'Ativando...' : 'Assinar Premium'}
             </button>
           </motion.div>
         </div>
@@ -140,9 +252,14 @@ export default function PricingPage() {
             <h4 className="font-headline text-xl md:text-2xl font-bold">Ainda na dúvida?</h4>
             <p className="text-sm md:text-base text-secondary font-medium">Explore as funcionalidades básicas sem custo.</p>
           </div>
-          <button className="w-full md:w-auto h-14 px-10 bg-surface-container-highest/50 border border-dashed border-outline-variant/30 text-primary font-black text-[10px] sm:text-xs uppercase tracking-widest rounded-2xl hover:bg-primary/10 transition-all flex items-center justify-center gap-3 active:scale-95">
+          <button
+            type="button"
+            onClick={() => activatePlan('visitante')}
+            disabled={loadingPlan !== null || !isAuthReady}
+            className="w-full md:w-auto h-14 px-10 bg-surface-container-highest/50 border border-dashed border-outline-variant/30 text-primary font-black text-[10px] sm:text-xs uppercase tracking-widest rounded-2xl hover:bg-primary/10 transition-all flex items-center justify-center gap-3 active:scale-95 cursor-pointer disabled:cursor-not-allowed disabled:opacity-70"
+          >
             <PlayCircle className="w-5 h-5" />
-            Testar versão gratuita
+            {loadingPlan === 'visitante' ? 'Ativando...' : 'Testar versão gratuita'}
           </button>
         </section>
       </main>

@@ -140,7 +140,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full h-14 bg-green-700 text-white font-bold rounded-xl hover:bg-green-600"
+                className="w-full h-14 bg-green-700 text-white font-bold rounded-xl hover:bg-green-600 hover:cursor-pointer transition-colors"
               >
                 {isSubmitting ? 'Entrando...' : 'Entrar'}
               </button>
@@ -160,10 +160,10 @@ export default function LoginPage() {
             {/* Social (placeholder) */}
             <button
               type="button"
-              className="w-full h-14 border rounded-xl flex items-center justify-center gap-2"
+              className="w-full h-14 border rounded-xl flex items-center justify-center gap-2 hover:cursor-pointer transition-colors"
             >
               <Image
-                src="/favicon.svg"
+                src="/google.svg"
                 alt="Google"
                 width={20}
                 height={20}

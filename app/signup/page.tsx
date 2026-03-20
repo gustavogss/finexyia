@@ -121,9 +121,9 @@ export default function SignupPage() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="w-full max-w-md bg-surface-container-lowest rounded-2xl p-8 shadow-xl space-y-6"
+          className="w-full max-w-md bg-surface-container-lowest rounded-2xl p-8 shadow-xl space-y-6 "
         >
-          <div className="text-center">
+          <div className="text-center ">
             <h2 className="text-2xl font-bold">Criar conta</h2>
             <p className="text-sm text-secondary">
               Comece a organizar sua vida financeira
@@ -171,7 +171,7 @@ export default function SignupPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full h-14 bg-green-700 text-white font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-green-600"
+              className="w-full h-14 bg-green-700 text-white font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-green-600 hover:cursor-pointer transition-colors"
             >
               {loading ? 'Criando...' : (
                 <>
@@ -192,7 +192,7 @@ export default function SignupPage() {
 
           <button
             onClick={handleGoogleSignup}
-            className="w-full h-14 border rounded-xl flex items-center justify-center gap-2"
+            className="w-full h-14 border rounded-xl flex items-center justify-center gap-2 hover:cursor-pointer transition-colors"
           >
             Criar com Google
           </button>
