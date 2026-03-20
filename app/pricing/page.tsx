@@ -2,7 +2,8 @@
 
 import React from 'react';
 import { useRouter } from 'next/navigation';
-import { TopAppBar } from '@/components/navigation';
+import { TopAppBar } from '@/components/top-bar';
+import { BottomNavBar } from '@/components/bottom-bar';
 import { auth, db } from '@/lib/firebase';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { onAuthStateChanged, type User } from 'firebase/auth';
@@ -262,9 +263,8 @@ export default function PricingPage() {
             {loadingPlan === 'visitante' ? 'Ativando...' : 'Testar versão gratuita'}
           </button>
         </section>
-      </main>
-      
-
+      </main>      
+    <BottomNavBar />
       {/* Visual Background Element */}
       <div className="fixed top-0 right-0 -z-10 w-[300px] md:w-[500px] h-[300px] md:h-[500px] primary-gradient opacity-5 blur-[80px] md:blur-[120px] rounded-full translate-x-1/3 -translate-y-1/3"></div>
     </div>

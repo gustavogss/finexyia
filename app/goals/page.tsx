@@ -1,7 +1,8 @@
 'use client';
 
 import React from 'react';
-import { TopAppBar } from '@/components/navigation';
+import { TopAppBar } from '@/components/top-bar';
+import {BottomNavBar} from '@/components/bottom-bar';
 import { cn } from '@/lib/utils';
 import { 
   TrendingUp, 
@@ -132,7 +133,7 @@ export default function GoalsPage() {
                 </motion.article>
               );
             })}
-
+          
             {/* Motivation Card */}
             <article className="primary-gradient p-8 rounded-2xl shadow-xl flex flex-col justify-between text-on-primary relative overflow-hidden group">
               <div className="absolute -right-10 -top-10 opacity-10 group-hover:scale-110 transition-transform duration-700">
@@ -179,6 +180,7 @@ export default function GoalsPage() {
           </div>
         </section>
       </main>    
+      <BottomNavBar />
     </div>
   );
 }

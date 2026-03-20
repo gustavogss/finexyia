@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { TopAppBar } from '@/components/navigation';
+import { TopAppBar } from '@/components/top-bar';
+import { BottomNavBar } from '@/components/bottom-bar';
 import { 
   Wifi as Contactless, 
   Banknote as Payments, 
@@ -200,6 +201,7 @@ export default function CheckoutPage() {
           </button>
         </form>
       </main>      
+      <BottomNavBar />
     </div>
   );
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { TopAppBar} from '@/components/navigation';
+import { TopAppBar} from '@/components/top-bar';
 import { 
   FileText as EditNote, 
   LayoutGrid as Category, 
@@ -23,6 +23,7 @@ import { AddBudgetModal } from '@/components/add-budget-modal';
 
 import { useTransactions } from '@/lib/transactions-context';
 import { getCategoryIcon, getCategoryColor } from '@/lib/categories';
+import { BottomNavBar } from '@/components/bottom-bar';
 
 export default function TransactionsPage() {
   const { addTransaction, transactions, deleteTransaction, updateTransaction, balance, budgets, addBudget, deleteBudget, updateBudget } = useTransactions();
@@ -636,6 +637,7 @@ export default function TransactionsPage() {
         />
 
       </main>     
+      <BottomNavBar />
     </div>
   );
 }

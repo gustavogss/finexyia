@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { TopAppBar } from '@/components/navigation';
+import { TopAppBar } from '@/components/top-bar';
 import { cn, formatCurrency } from '@/lib/utils';
 import { 
   TrendingDown, 
@@ -19,6 +19,7 @@ import { motion } from 'motion/react';
 import { useTransactions } from '@/lib/transactions-context';
 import { AssistantModal } from '@/components/assistant-modal';
 import { getCategoryIcon, getCategoryColor } from '@/lib/categories';
+import { BottomNavBar } from '@/components/bottom-bar';
 
 export default function DashboardPage() {
   const { balance, transactions, budgets } = useTransactions();
@@ -324,7 +325,7 @@ export default function DashboardPage() {
         </section>
 
       </main>
-      
+       <BottomNavBar />
       <AssistantModal isOpen={isAssistantOpen} onClose={() => setIsAssistantOpen(false)} />
     </div>
   );

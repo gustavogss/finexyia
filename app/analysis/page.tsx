@@ -1,7 +1,8 @@
 'use client';
 
 import React from 'react';
-import { TopAppBar } from '@/components/navigation';
+import { TopAppBar } from '@/components/top-bar';
+import { BottomNavBar} from '@/components/bottom-bar';
 import { cn, formatCurrency } from '@/lib/utils';
 import { 
   TrendingUp, 
@@ -617,6 +618,7 @@ export default function AnalysisPage() {
           <div className="absolute -right-20 -top-20 w-64 h-64 bg-tertiary/10 rounded-full blur-3xl"></div>
         </section>
       </main>      
+      <BottomNavBar/>
     </div>
   );
 }

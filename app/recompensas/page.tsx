@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { TopAppBar } from '@/components/navigation';
+import { TopAppBar } from '@/components/top-bar';
+import {BottomNavBar} from '@/components/bottom-bar';
 import { 
   Flame, 
   BarChart3, 
@@ -270,6 +271,7 @@ export default function RewardsPage() {
         </motion.section>
 
       </main>  
+           <BottomNavBar />
 
       {/* Detail Modal */}
       <AnimatePresence>
