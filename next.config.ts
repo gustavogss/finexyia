@@ -17,15 +17,18 @@ const nextConfig: NextConfig = {
   },
   output: 'standalone',
   transpilePackages: ['motion'],
+
+  // ⚡ Silencia o conflito com Turbopack
+  turbopack: {},
+
   webpack: (config, { dev }) => {
-    // HMR is disabled in AI Studio via DISABLE_HMR env var.
     if (dev && process.env.DISABLE_HMR === 'true') {
       config.watchOptions = {
         ignored: /.*/,
       };
     }
 
-    // ✅ Adiciona suporte a SVG como componente React
+    // Suporte a SVG como componente React
     config.module.rules.push({
       test: /\.svg$/i,
       issuer: /\.[jt]sx?$/,
