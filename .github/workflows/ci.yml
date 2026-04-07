@@ -1,4 +1,4 @@
-name: CI/CD Pipeline (Expo Android)
+name: CI/CD Pipeline (Expo) - Fast
 
 on:
   push:
@@ -13,30 +13,50 @@ on:
       - develop
 
 jobs:
-  build-android:
-    name: Build & Validate Android
+  build:
+    name: Build & Validate
     runs-on: ubuntu-latest
-    env:
-      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-      EAS_BUILD_NO_EXPO_GO_WARNING: true # remove warning do Expo Go
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Set up Node.js
+      - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: 20
 
-      - name: Install dependencies
-        run: npm install -g eas-cli
+      # Cache do npm, node_modules e Expo
+      - name: Cache Node & Expo
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.npm
+            ~/.expo
+            node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
 
-      - name: Install project packages
+      - name: Install dependencies
         run: npm ci
+
+      - name: Install EAS CLI
+        run: npm install -g eas-cli
 
       - name: Run tests
         run: npm test
 
-      - name: Build Android (EAS)
+      # Cache de EAS Build Artifacts (reduz upload/download do projeto)
+      - name: Cache EAS Build Artifacts
+        uses: actions/cache@v3
+        with:
+          path: |
+            .eas/build
+          key: ${{ runner.os }}-eas-build-${{ hashFiles('**/*') }}
+          restore-keys: |
+            ${{ runner.os }}-eas-build-
+
+      - name: EAS Build Android
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: eas build --platform android --non-interactive --profile production
