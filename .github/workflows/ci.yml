@@ -16,6 +16,9 @@ jobs:
   build:
     name: Build & Validate
     runs-on: ubuntu-latest
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      EAS_BUILD_NO_EXPO_GO_WARNING: ${{ secrets.EAS_BUILD_NO_EXPO_GO_WARNING }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -25,7 +28,6 @@ jobs:
         with:
           node-version: 20
 
-      # Cache do npm, node_modules e Expo
       - name: Cache Node & Expo
         uses: actions/cache@v3
         with:
@@ -46,17 +48,13 @@ jobs:
       - name: Run tests
         run: npm test
 
-      # Cache de EAS Build Artifacts (reduz upload/download do projeto)
       - name: Cache EAS Build Artifacts
         uses: actions/cache@v3
         with:
-          path: |
-            .eas/build
-          key: ${{ runner.os }}-eas-build-${{ hashFiles('**/*') }}
+          path: .eas/build
+          key: ${{ runner.os }}-eas-build-${{ hashFiles('.eas.json') }}
           restore-keys: |
             ${{ runner.os }}-eas-build-
 
       - name: EAS Build Android
-        env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: eas build --platform android --non-interactive --profile production
