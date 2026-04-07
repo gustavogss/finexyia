@@ -2,11 +2,11 @@ import { useAppTheme } from "@/hooks/useAppTheme";
 import { useUserStore } from "@/store/useUserStore";
 import { colors } from "@/theme/colors";
 import { useRouter } from "expo-router";
-import { Sparkles } from "lucide-react-native";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Image,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -28,7 +28,10 @@ export default function LoginScreen() {
     } catch (error: any) {
       // Handle cancellation or error
       if (error.code !== "auth/popup-closed-by-user") {
-        Alert.alert("Erro no Login", "Não foi possível autenticar com o Google. Tente novamente.");
+        Alert.alert(
+          "Erro no Login",
+          "Não foi possível autenticar com o Google. Tente novamente.",
+        );
         console.error(error);
       }
     } finally {
@@ -37,13 +40,22 @@ export default function LoginScreen() {
   }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: t.isDark ? "#121212" : "#FFFFFF" }]}>
+    <SafeAreaView
+      style={[
+        styles.container,
+        { backgroundColor: t.isDark ? "#121212" : "#FFFFFF" },
+      ]}
+    >
       <View style={styles.content}>
         <View style={styles.logoSlot}>
-          <View style={[styles.logoIcon, { backgroundColor: colors.primary.DEFAULT }]}>
-            <Sparkles size={32} color="#FFFFFF" />
-          </View>
-          <Text style={[styles.appName, { color: t.textPrimary }]}>FinexyIA</Text>
+          <Image
+            source={require("../../assets/images/icon.png")}
+            style={styles.logoImage}
+            resizeMode="contain"
+          />
+          <Text style={[styles.appName, { color: t.textPrimary }]}>
+            Finexy<Text style={{ color: "#F97316" }}>IA</Text>
+          </Text>
         </View>
 
         <View style={styles.textGroup}>
@@ -51,7 +63,8 @@ export default function LoginScreen() {
             Controle suas finanças de forma inteligente
           </Text>
           <Text style={[styles.subtitle, { color: t.textMuted }]}>
-            Sua jornada para a liberdade financeira começa aqui com o auxílio da nossa IA.
+            Sua jornada para a liberdade financeira começa aqui com o auxílio da
+            nossa IA.
           </Text>
         </View>
 
@@ -68,7 +81,9 @@ export default function LoginScreen() {
                 <View style={styles.googleIconPlaceholder}>
                   <Text style={styles.googleG}>G</Text>
                 </View>
-                <Text style={[styles.googleButtonText, { color: t.textPrimary }]}>
+                <Text
+                  style={[styles.googleButtonText, { color: t.textPrimary }]}
+                >
                   Entrar com Google
                 </Text>
               </>
@@ -77,8 +92,12 @@ export default function LoginScreen() {
 
           <Text style={[styles.termsText, { color: t.textMuted }]}>
             Ao continuar, você concorda com nossos{"\n"}
-            <Text style={{ textDecorationLine: "underline" }}>Termos de Serviço</Text> e{" "}
-            <Text style={{ textDecorationLine: "underline" }}>Privacidade</Text>.
+            <Text style={{ textDecorationLine: "underline" }}>
+              Termos de Serviço
+            </Text>{" "}
+            e{" "}
+            <Text style={{ textDecorationLine: "underline" }}>Privacidade</Text>
+            .
           </Text>
         </View>
       </View>
@@ -100,12 +119,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 40,
   },
-  logoIcon: {
-    width: 64,
-    height: 64,
-    borderRadius: 16,
-    justifyContent: "center",
-    alignItems: "center",
+  logoImage: {
+    width: 80,
+    height: 80,
     marginBottom: 12,
   },
   appName: {
@@ -143,7 +159,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderRadius: 14,
     borderWidth: 1,
-    backgroundColor: "transparent",
+    backgroundColor: "#EEEEEE",
     marginBottom: 24,
   },
   googleIconPlaceholder: {

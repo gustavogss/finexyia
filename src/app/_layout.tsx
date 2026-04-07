@@ -12,14 +12,15 @@ import {
 } from "@react-navigation/native";
 import { Stack, useRouter, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import { useEffect } from "react";
-import { useColorScheme } from "react-native";
+import { useEffect, useRef, useState } from "react";
+import { useColorScheme, View } from "react-native";
 import "react-native-reanimated";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { useUserStore } from "@/store/useUserStore";
+import AppLoader from "../../components/AppLoader";
 
-SplashScreen.preventAutoHideAsync();
+SplashScreen.preventAutoHideAsync().catch(() => {});
 
 export default function RootLayout() {
   const [loaded, error] = useFonts({
@@ -32,7 +33,9 @@ export default function RootLayout() {
   const initAuthListener = useUserStore((s) => s.initAuthListener);
   const isLoading = useUserStore((s) => s.isLoading);
 
-  // Initialize Firebase auth listener on mount
+  const [showLoader, setShowLoader] = useState(true);
+  const hasHiddenSplash = useRef(false);
+
   useEffect(() => {
     const unsubscribe = initAuthListener();
     return unsubscribe;
@@ -42,14 +45,26 @@ export default function RootLayout() {
     if (error) throw error;
   }, [error]);
 
+  // Esconde a splash e inicia o timer do loader assim que tudo estiver pronto
   useEffect(() => {
-    if (loaded && !isLoading) {
+    if (loaded && !isLoading && !hasHiddenSplash.current) {
+      hasHiddenSplash.current = true;
+
       SplashScreen.hideAsync();
+
+      // ⏳ mantém loader por 800ms (efeito premium)
+      setTimeout(() => {
+        setShowLoader(false);
+      }, 800);
     }
   }, [loaded, isLoading]);
 
   if (!loaded || isLoading) {
     return null;
+  }
+
+  if (showLoader) {
+    return <AppLoader />;
   }
 
   return <RootLayoutNav />;
@@ -64,33 +79,31 @@ function RootLayoutNav() {
   useEffect(() => {
     if (isLoading) return;
 
-    const inAuthGroup = segments[0] === "(tabs)";
-    const inLoginGroup = segments[0] === "login";
+    const root = segments[0];
 
-    if (!isAuthenticated && inAuthGroup) {
-      // Redirect to login if not authenticated and trying to access tabs
-      router.replace("/login");
-    } else if (isAuthenticated && inLoginGroup) {
-      // Redirect to profile if authenticated and on login screen
+    if (!isAuthenticated) {
+      if (root !== "login") {
+        router.replace("/login");
+      }
+      return;
+    }
+
+    if (root === "login" || !root) {
       router.replace("/(tabs)/profile");
-    } else if (!isAuthenticated && !segments[0]) {
-      // Redirect to login if on root and not authenticated
-      router.replace("/login");
-    } else if (isAuthenticated && !segments[0]) {
-        // Redirect to profile if on root and authenticated
-        router.replace("/(tabs)/profile");
     }
   }, [isAuthenticated, segments, isLoading]);
 
   return (
-    <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-      <SafeAreaProvider>
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="login" options={{ gestureEnabled: false }} />
-          <Stack.Screen name="(tabs)" options={{ gestureEnabled: false }} />
-          <Stack.Screen name="modal" options={{ presentation: "modal" }} />
-        </Stack>
-      </SafeAreaProvider>
-    </ThemeProvider>
+    <SafeAreaProvider>
+      <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+        <View style={{ flex: 1 }}>
+          <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="login" options={{ gestureEnabled: false }} />
+            <Stack.Screen name="(tabs)" options={{ gestureEnabled: false }} />
+            <Stack.Screen name="modal" options={{ presentation: "modal" }} />
+          </Stack>
+        </View>
+      </ThemeProvider>
+    </SafeAreaProvider>
   );
 }

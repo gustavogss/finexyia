@@ -5,6 +5,7 @@ import { Bell, Moon, Sun, Trash2, X } from "lucide-react-native";
 import React, { useRef, useState } from "react";
 import {
   Animated,
+  Image,
   Modal,
   StatusBar,
   StyleSheet,
@@ -101,12 +102,12 @@ function NotificationSidebar({ visible, onClose }: NotificationSidebarProps) {
             )}
           </View>
           <TouchableOpacity
-              style={styles.iconActionBtn}
-              onPress={onClose}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            >
-              <X size={20} {...{ color: colors.neutral[500] }} />
-            </TouchableOpacity>
+            style={styles.iconActionBtn}
+            onPress={onClose}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <X size={20} {...{ color: colors.neutral[500] }} />
+          </TouchableOpacity>
         </View>
 
         {/* Divider */}
@@ -198,8 +199,14 @@ export function AppHeader() {
 
         {/* Centro — Logo */}
         <View style={styles.logoContainer}>
-          <Text style={styles.logoText}>finex</Text>
-          <Text style={styles.logoAccent}>yia</Text>
+          <Image
+            source={require("../../assets/images/icon.png")}
+            style={[styles.headerLogoIcon, { tintColor: "#FFFFFF" }]}
+            resizeMode="contain"
+          />
+          <Text style={styles.logoText}>
+            Finexy<Text style={styles.logoAccent}>IA</Text>
+          </Text>
         </View>
 
         {/* Direita — Sino */}
@@ -258,7 +265,12 @@ const styles = StyleSheet.create({
   },
   logoContainer: {
     flexDirection: "row",
-    alignItems: "baseline",
+    alignItems: "center",
+    gap: 8,
+  },
+  headerLogoIcon: {
+    width: 30,
+    height: 30,
   },
   logoText: {
     fontFamily: "Inter_700Bold",
@@ -269,7 +281,7 @@ const styles = StyleSheet.create({
   logoAccent: {
     fontFamily: "Inter_700Bold",
     fontSize: 22,
-    color: colors.secondary.DEFAULT,
+    color: "#F97316",
     letterSpacing: -0.5,
   },
   badge: {

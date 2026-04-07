@@ -8,13 +8,11 @@
     "scheme": "finexyia",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-    "splash": {
-      "image": "./assets/images/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
-    },
+
     "assetBundlePatterns": ["**/*"],
+
     "ios": {},
+
     "android": {
       "package": "com.gsolucoesdigitais.finexyia",
       "adaptiveIcon": {
@@ -25,11 +23,13 @@
       "predictiveBackGestureEnabled": false,
       "permissions": ["android.permission.CAMERA"]
     },
+
     "web": {
       "bundler": "metro",
       "output": "static",
       "favicon": "./assets/images/favicon.png"
     },
+
     "plugins": [
       "expo-router",
       [
@@ -38,17 +38,32 @@
           "cameraPermission": "Finexyia precisa acessar sua câmera para ler QR Codes de notas fiscais.",
           "recordAudioAndroid": false
         }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#FFFFFF",
+          "image": "./assets/images/icon.png",
+          "dark": {
+            "image": "./assets/images/icon.png",
+            "backgroundColor": "#FFFFFF"
+          },
+          "imageWidth": 200
+        }
       ]
     ],
+
     "experiments": {
       "typedRoutes": true
     },
+
     "extra": {
       "router": {},
       "eas": {
         "projectId": "9feee629-19c9-4944-813c-b9ac14dd6245"
       }
     },
+
     "owner": "gustavogss"
   }
 }
