@@ -1,5 +1,6 @@
 # 📱 Finexyia
-### Inteligência Financeira na Palma da sua Mão.
+
+### Inteligência Financeira na Palma da sua Mão
 
 [![CI/CD Pipeline](https://github.com/gustavogss/finexyia/actions/workflows/ci.yml/badge.svg)](https://github.com/gustavogss/finexyia/actions/workflows/ci.yml)
 [![Expo](https://img.shields.io/badge/Expo-54.0-black?logo=expo&logoColor=white)](https://expo.dev/)
@@ -14,17 +15,17 @@
 
 ## ✨ Funcionalidades Principais
 
-| Recurso | Gratuito | Premium 💎 |
-| :--- | :---: | :---: |
-| Registro de Receitas/Despesas | ✅ | ✅ |
-| Dashboards Dinâmicos | ✅ | ✅ |
-| Metas Financeiras | ❌ | ✅ |
-| Insights com IA | 1/dia | Ilimitado* |
-| Simulação de Investimentos | ❌ | ✅ |
-| Leitura de QR Code (NF) | ❌ | ✅ |
-| Programa de Recompensas | ❌ | ✅ |
+| Recurso                       |  Gratuito   |  Premium 💎   |
+| :---------------------------- | :---------: | :-----------: |
+| Registro de Receitas/Despesas |     ✅      |      ✅       |
+| Dashboards Dinâmicos          |     ✅      |      ✅       |
+| Metas Financeiras             |     ❌      |      ✅       |
+| Insights com IA               | 5 consultas | 100 consultas |
+| Simulação de Investimentos    |     ❌      |      ✅       |
+| Leitura de QR Code (NF)       |     ❌      |      ✅       |
+| Programa de Recompensas       |     ❌      |      ✅       |
 
-> *Conforme sistema de créditos mensais.
+> \*Conforme sistema de créditos mensais.
 
 ## 🛠️ Stack Tecnológica
 
@@ -45,28 +46,33 @@
 
 ### Instalação
 
-1.  **Clone o repositório**:
-    ```bash
-    git clone https://github.com/gustavogss/finexyia.git
-    cd finexyia
-    ```
+1. **Clone o repositório**:
 
-2.  **Instale as dependências**:
-    ```bash
-    npm install
-    ```
+   ```bash
+   git clone https://github.com/gustavogss/finexyia.git
+   cd finexyia
+   ```
 
-3.  **Configure as variáveis de ambiente**:
-    Crie um arquivo `.env` baseado nos templates:
-    ```bash
-    cp .env.development .env
-    ```
-    *Preencha com suas chaves do Firebase obtidas no Console do Firebase.*
+2. **Instale as dependências**:
 
-4.  **Inicie o servidor de desenvolvimento**:
-    ```bash
-    npm run start
-    ```
+   ```bash
+   npm install
+   ```
+
+3. **Configure as variáveis de ambiente**:
+   Crie um arquivo `.env` baseado nos templates:
+
+   ```bash
+   cp .env.development .env
+   ```
+
+   _Preencha com suas chaves do Firebase obtidas no Console do Firebase._
+
+4. **Inicie o servidor de desenvolvimento**:
+
+   ```bash
+   npm run start
+   ```
 
 ## 🏗️ CI/CD & Deploy
 
