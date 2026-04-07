@@ -103,7 +103,11 @@ export const useUserStore = create<UserState>((set, get) => ({
     const { user } = get();
     if (!user) return;
 
-    const updates = { plan: "premium" as const, credits: user.credits + 50 };
+    const updates = { 
+      plan: "premium" as const, 
+      credits: 50,
+      monthlyCreditLimit: 50 
+    };
     await updateUserProfile(user.id, updates);
     set({ user: { ...user, ...updates } });
   },
@@ -119,6 +123,14 @@ export const useUserStore = create<UserState>((set, get) => ({
     const unsubscribe = onAuthChange(async (firebaseUser) => {
       if (firebaseUser) {
         const profile = await getUserProfile(firebaseUser.uid);
+        
+        // Fix old users initialized with 100 credits by buggy code
+        if (profile && profile.plan === "free" && profile.credits === 100) {
+          profile.credits = 5;
+          profile.monthlyCreditLimit = 5;
+          await updateUserProfile(profile.id, { credits: 5, monthlyCreditLimit: 5 });
+        }
+
         set({
           user: profile,
           isAuthenticated: !!profile,

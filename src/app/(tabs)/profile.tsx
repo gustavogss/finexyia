@@ -1,18 +1,13 @@
 import { PremiumCelebration } from "@/components/PremiumCelebration";
 import { useAppTheme } from "@/hooks/useAppTheme";
+import { toggleAutoRenew } from "@/services/firestore";
 import { useUserStore } from "@/store/useUserStore";
 import { colors } from "@/theme/colors";
-import {
-  Check,
-  LogOut,
-  Plus,
-  RefreshCcw,
-  Sparkles,
-  X,
-} from "lucide-react-native";
+import { Check, LogOut, RefreshCcw, Sparkles, X } from "lucide-react-native";
 import React, { useState } from "react";
 import {
   Alert,
+  Image,
   Modal,
   ScrollView,
   StyleSheet,
@@ -88,33 +83,41 @@ function LogoutModal({
 
 const FREE_FEATURES = [
   { label: "Transações básicas", included: true },
+  { label: "Insights de IA", included: true },
+  { label: "5 Simulações de Invetimento com IA", included: true },
   { label: "Sem metas", included: false },
   { label: "Sem orçamento", included: false },
   { label: "Sem QRCode", included: false },
   { label: "Sem Pix", included: false },
   { label: "Sem recompensas", included: false },
-  { label: "Sem Insights de IA", included: false },
 ];
 
 const PREMIUM_FEATURES = [
   { label: "Todos os Recursos", included: true },
-  { label: "Suporte prioritário", included: true },
-  { label: "Metas e Orçamento", included: true },
-  { label: "Pix e QRCode", included: true },
-  { label: "Programa de recompensas", included: true },
-  { label: "Gráficos de Progressão", included: true },
   { label: "Insights de IA", included: true },
+  { label: "50 Simulações de Investimento com IA", included: true },
+  { label: "Metas e Orçamento", included: true },
+  { label: "Pagamento por Pix e QRCode", included: true },
+  { label: "Leitor de Nota Fiscal", included: true },
+  { label: "Gráficos de Progressão", included: true },
+  { label: "Compra avulsa de crédito se acabar", included: true },
+  { label: "Programa de recompensas", included: true },
 ];
 
 export default function ProfileScreen() {
-  const [autoRenew, setAutoRenew] = useState(true);
+  const { user, logout, upgradeToPremium } = useUserStore();
+
+  // autoRenew => true if cancelAtPeriodEnd is false
+  const [autoRenew, setAutoRenew] = useState(
+    user ? !user.cancelAtPeriodEnd : true,
+  );
+
   const [systemNotif, setSystemNotif] = useState(true);
   const [budgetAlert, setBudgetAlert] = useState(true);
   const [billReminder, setBillReminder] = useState(true);
   const [celebrate, setCelebrate] = useState(false);
   const [isLogoutModalVisible, setIsLogoutModalVisible] = useState(false);
 
-  const { user, logout, upgradeToPremium } = useUserStore();
   const isPremium = user?.plan === "premium";
   const t = useAppTheme();
 
@@ -134,6 +137,19 @@ export default function ProfileScreen() {
   async function confirmLogout() {
     setIsLogoutModalVisible(false);
     await logout();
+  }
+
+  async function handleToggleAutoRenew(value: boolean) {
+    if (!user) return;
+    setAutoRenew(value);
+    try {
+      // If autoRenew is true, cancelAtPeriodEnd is false
+      await toggleAutoRenew(user.id, !value);
+    } catch (error) {
+      console.error(error);
+      setAutoRenew(!value); // revert UI
+      Alert.alert("Erro", "Falha ao alterar configuração de renovação.");
+    }
   }
 
   if (!user) return null;
@@ -161,9 +177,13 @@ export default function ProfileScreen() {
         {/* User Info */}
         <View style={styles.profileHeader}>
           <View style={styles.avatarContainer}>
-            <View style={styles.avatar}>
-              <Text style={styles.avatarText}>{initials}</Text>
-            </View>
+            {user.avatar ? (
+              <Image source={{ uri: user.avatar }} style={styles.avatarImage} />
+            ) : (
+              <View style={styles.avatar}>
+                <Text style={styles.avatarText}>{initials}</Text>
+              </View>
+            )}
             {isPremium && (
               <View style={styles.premiumAvatarBadge}>
                 <Sparkles size={12} {...{ color: "#FFF" }} />
@@ -222,9 +242,7 @@ export default function ProfileScreen() {
               justifyContent: "space-between",
             }}
           >
-            <Text style={[styles.planName, { color: t.textPrimary }]}>
-              Free
-            </Text>
+            <Text style={[styles.planName, { color: "#000000" }]}>Free</Text>
             {!isPremium && (
               <View style={styles.currentFreeBadge}>
                 <Text style={styles.currentFreeText}>Atual</Text>
@@ -244,8 +262,7 @@ export default function ProfileScreen() {
               <Text
                 style={[
                   styles.featureText,
-                  { color: t.textPrimary },
-                  !f.included && { color: t.textMuted },
+                  { color: f.included ? "#000000" : t.textMuted },
                 ]}
               >
                 {f.label}
@@ -276,7 +293,7 @@ export default function ProfileScreen() {
             </Text>
           </View>
           <Text style={[styles.planPricePremium, { color: "#FFFFFFCC" }]}>
-            R$ 54,90/mês • 100 créditos
+            R$ 54,90/mês • 50 créditos
           </Text>
 
           {PREMIUM_FEATURES.map((f, i) => (
@@ -303,29 +320,6 @@ export default function ProfileScreen() {
           )}
         </View>
 
-        {/* Payment Methods */}
-        <Text style={[styles.sectionLabel, { color: t.textMuted }]}>
-          💳 FORMAS DE PAGAMENTO
-        </Text>
-        <TouchableOpacity style={styles.paymentRow}>
-          <View>
-            <Text style={[styles.paymentTitle, { color: t.textPrimary }]}>
-              Forma de pagamento
-            </Text>
-            <Text style={[styles.paymentSubtitle, { color: t.textMuted }]}>
-              Nenhum cartão cadastrado
-            </Text>
-          </View>
-          <View
-            style={[
-              styles.addCircle,
-              { backgroundColor: colors.primary.DEFAULT + "10" },
-            ]}
-          >
-            <Plus size={18} {...{ color: colors.primary.DEFAULT }} />
-          </View>
-        </TouchableOpacity>
-
         {/* Auto Renew */}
         <View style={styles.settingRow}>
           <View style={styles.settingLeft}>
@@ -334,14 +328,19 @@ export default function ProfileScreen() {
               <Text style={[styles.settingTitle, { color: t.textPrimary }]}>
                 Renovação Automática
               </Text>
-              <Text style={[styles.settingSubtitle, { color: t.textMuted }]}>
-                Ativa
+              <Text
+                style={[
+                  styles.settingSubtitle,
+                  { color: autoRenew ? t.textMuted : colors.error.DEFAULT },
+                ]}
+              >
+                {autoRenew ? "Ativa" : "Desativada"}
               </Text>
             </View>
           </View>
           <Switch
             value={autoRenew}
-            onValueChange={setAutoRenew}
+            onValueChange={handleToggleAutoRenew}
             trackColor={{
               false: t.isDark ? colors.neutral[600] : colors.neutral[200],
               true: colors.primary.DEFAULT,
@@ -350,7 +349,7 @@ export default function ProfileScreen() {
           />
         </View>
 
-        {autoRenew && (
+        {autoRenew ? (
           <View
             style={[
               styles.autoRenewNotice,
@@ -363,6 +362,22 @@ export default function ProfileScreen() {
             <Text style={styles.autoRenewText}>
               Confirmação: A renovação automática está ativa. Seu plano será
               renovado automaticamente ao final do período.
+            </Text>
+          </View>
+        ) : (
+          <View
+            style={[
+              styles.autoRenewNotice,
+              {
+                backgroundColor: t.isDark ? "#2D1215" : "#FFF5F5",
+                borderColor: t.isDark ? "#991B1B" : "#FCA5A5",
+              },
+            ]}
+          >
+            <Text style={[styles.autoRenewText, { color: colors.error.dark }]}>
+              ⚠️ Atenção: A renovação automática está desativada. Você pode
+              esquecer de renovar sua assinatura e perder suas recompensas,
+              benefícios e créditos acumulados.
             </Text>
           </View>
         )}
@@ -395,16 +410,24 @@ export default function ProfileScreen() {
           </View>
           <View style={styles.historyRow}>
             <Text style={[styles.historyCell, { color: t.textPrimary }]}>
-              25/03/2026
+              {user.currentPeriodStart
+                ? new Date(user.currentPeriodStart).toLocaleDateString("pt-BR")
+                : "--"}
             </Text>
             <Text style={[styles.historyCell, { color: t.textPrimary }]}>
               *** 123
             </Text>
             <Text style={[styles.historyCell, { color: t.textPrimary }]}>
-              25/04/2026
+              {user.currentPeriodEnd
+                ? new Date(user.currentPeriodEnd).toLocaleDateString("pt-BR")
+                : "--"}
             </Text>
             <View style={styles.statusPill}>
-              <Text style={styles.statusText}>Ativo</Text>
+              <Text style={styles.statusText}>
+                {user.subscriptionStatus === "active"
+                  ? "Ativo"
+                  : user.subscriptionStatus || "Inativo"}
+              </Text>
             </View>
           </View>
         </View>
@@ -514,6 +537,13 @@ const styles = StyleSheet.create({
     backgroundColor: colors.neutral[200],
     alignItems: "center",
     justifyContent: "center",
+  },
+  avatarImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    borderWidth: 2,
+    borderColor: colors.primary.DEFAULT,
   },
   avatarText: {
     fontFamily: "Inter_700Bold",

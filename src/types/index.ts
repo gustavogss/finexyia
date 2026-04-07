@@ -11,6 +11,16 @@ export interface User {
   credits: number;
   avatar?: string;
   createdAt: string;
+  subscriptionStatus?: 'active' | 'canceled' | 'past_due' | 'unpaid' | 'inactive';
+  isTrial?: boolean;
+  currentPeriodStart?: string;
+  currentPeriodEnd?: string;
+  cancelAtPeriodEnd?: boolean;
+  mesesConsecutivos?: number;
+  monthlyCreditLimit?: number;
+  stripeCustomerId?: string | null;
+  stripeSubscriptionId?: string | null;
+  updatedAt?: string;
 }
 
 export interface Transaction {

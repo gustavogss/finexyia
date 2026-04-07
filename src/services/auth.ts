@@ -28,7 +28,7 @@ export async function loginWithGoogle(): Promise<User> {
     uid: "gustavo-mock-id",
     displayName: "gustavo souza",
     email: "gustavogss.jp@gmail.com",
-    photoURL: "https://api.dicebear.com/7.x/avataaars/svg?seed=GS",
+    photoURL: "https://ui-avatars.com/api/?name=Gustavo+Souza&background=1B3A4B&color=fff&size=200&bold=true&format=png",
   };
 
   let profile = await getUserProfile(simulatedUser.uid);
@@ -38,10 +38,34 @@ export async function loginWithGoogle(): Promise<User> {
       id: simulatedUser.uid,
       name: simulatedUser.displayName,
       email: simulatedUser.email,
+      avatar: simulatedUser.photoURL,
       plan: "free",
       credits: 5,
+      monthlyCreditLimit: 5,
       createdAt: new Date().toISOString(),
+      subscriptionStatus: "active",
+      isTrial: true,
+      currentPeriodStart: new Date().toISOString(),
+      currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+      cancelAtPeriodEnd: false,
+      mesesConsecutivos: 0,
+      stripeCustomerId: null,
+      stripeSubscriptionId: null,
+      updatedAt: new Date().toISOString(),
     };
+    await createUserProfile(profile);
+  }
+
+  // Fix for previously created mock users that were given 100 credits by mistake
+  if (profile && profile.plan === "free" && profile.credits === 100) {
+    profile.credits = 5;
+    profile.monthlyCreditLimit = 5;
+    await createUserProfile(profile); // This uses merge: true and will update it
+  }
+
+  // Ensure avatar is always up-to-date from Google
+  if (!profile.avatar && simulatedUser.photoURL) {
+    profile.avatar = simulatedUser.photoURL;
     await createUserProfile(profile);
   }
 
@@ -71,7 +95,17 @@ export async function registerUser(
     email,
     plan: "free",
     credits: 5,
+    monthlyCreditLimit: 5,
     createdAt: new Date().toISOString(),
+    subscriptionStatus: "active",
+    isTrial: true,
+    currentPeriodStart: new Date().toISOString(),
+    currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+    cancelAtPeriodEnd: false,
+    mesesConsecutivos: 0,
+    stripeCustomerId: null,
+    stripeSubscriptionId: null,
+    updatedAt: new Date().toISOString(),
   };
 
   await createUserProfile(user);
@@ -91,6 +125,13 @@ export async function loginUser(
 
   if (!profile) {
     throw new Error("Perfil do usuário não encontrado no Firestore.");
+  }
+
+  // Fix for previously created mock users that were given 100 credits by mistake
+  if (profile.plan === "free" && profile.credits === 100) {
+    profile.credits = 5;
+    profile.monthlyCreditLimit = 5;
+    await createUserProfile(profile); // This uses merge: true and will update it
   }
 
   return profile;

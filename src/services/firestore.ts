@@ -31,27 +31,73 @@ const billsCol = collection(db, "bills");
 // ─── Users ──────────────────────────────────────────────────────────
 
 export async function createUserProfile(user: User): Promise<void> {
-  await setDoc(doc(db, "users", user.id), {
-    name: user.name,
-    email: user.email,
-    plan: user.plan,
-    credits: user.credits,
-    avatar: user.avatar ?? null,
-    createdAt: user.createdAt,
-  });
+  await setDoc(
+    doc(db, "users", user.id),
+    {
+      name: user.name,
+      email: user.email,
+      plan: user.plan,
+      credits: user.credits ?? 5,
+      monthlyCreditLimit: user.monthlyCreditLimit ?? 5,
+      avatar: user.avatar ?? null,
+      createdAt: user.createdAt,
+      subscriptionStatus: user.subscriptionStatus ?? "active",
+      isTrial: user.isTrial ?? true,
+      currentPeriodStart: user.currentPeriodStart ?? new Date().toISOString(),
+      currentPeriodEnd:
+        user.currentPeriodEnd ??
+        new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+      cancelAtPeriodEnd: user.cancelAtPeriodEnd ?? false,
+      mesesConsecutivos: user.mesesConsecutivos ?? 0,
+      stripeCustomerId: user.stripeCustomerId ?? null,
+      stripeSubscriptionId: user.stripeSubscriptionId ?? null,
+      updatedAt: user.updatedAt ?? new Date().toISOString(),
+    },
+    { merge: true },
+  );
 }
 
 export async function getUserProfile(userId: string): Promise<User | null> {
   const snap = await getDoc(doc(db, "users", userId));
   if (!snap.exists()) return null;
-  return { id: snap.id, ...snap.data() } as User;
+
+  const data = snap.data();
+  return {
+    ...data,
+    id: snap.id,
+    plan: data.plan || "free",
+    subscriptionStatus: data.subscriptionStatus || "inactive",
+    credits: typeof data.credits === "number" ? data.credits : 0,
+    monthlyCreditLimit:
+      typeof data.monthlyCreditLimit === "number"
+        ? data.monthlyCreditLimit
+        : 100,
+    cancelAtPeriodEnd: data.cancelAtPeriodEnd ?? false,
+    currentPeriodEnd: data.currentPeriodEnd ?? null,
+  } as User;
 }
 
 export async function updateUserProfile(
   userId: string,
   data: Partial<Omit<User, "id">>,
 ): Promise<void> {
-  await updateDoc(doc(db, "users", userId), data);
+  // Use setDoc with merge: true to avoid errors if the document does not exist yet.
+  await setDoc(doc(db, "users", userId), data, { merge: true });
+}
+
+export async function toggleAutoRenew(
+  userId: string,
+  cancelAtPeriodEnd: boolean,
+): Promise<void> {
+  // Use setDoc with merge: true to avoid errors if the document does not exist yet.
+  await setDoc(
+    doc(db, "users", userId),
+    {
+      cancelAtPeriodEnd,
+      updatedAt: new Date().toISOString(),
+    },
+    { merge: true },
+  );
 }
 
 // ─── Transactions ───────────────────────────────────────────────────
