@@ -14,7 +14,7 @@ on:
 
 jobs:
   build:
-    name: Build & Validate Android with EAS
+    name: Build & Validate with EAS
     runs-on: ubuntu-latest
     steps:
       # Pega o código
