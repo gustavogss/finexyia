@@ -13,6 +13,8 @@
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {},
     "android": {
       "package": "com.gsolucoesdigitais.finexyia",
       "adaptiveIcon": {
