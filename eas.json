@@ -1,6 +1,7 @@
 {
   "cli": {
-    "version": ">= 7.1.0"
+    "version": ">= 7.1.0",
+    "appVersionSource": "local"
   },
   "build": {
     "development": {
@@ -17,7 +18,8 @@
       "distribution": "store",
       "env": {
         "NODE_ENV": "production"
-      }
+      },
+      "autoIncrement": true
     }
   },
   "submit": {
