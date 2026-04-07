@@ -14,26 +14,32 @@ on:
 
 jobs:
   build:
-    name: Build & Validate with EAS
+    name: Build & Validate Android with EAS
     runs-on: ubuntu-latest
     steps:
+      # Pega o código
       - uses: actions/checkout@v3
 
+      # Configura Node.js
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
           node-version: 20
 
+      # Instala dependências
       - name: Install dependencies
         run: npm install
 
+      # Instala o EAS CLI
       - name: Install EAS CLI
         run: npm install -g eas-cli
 
+      # Roda os testes (opcional)
       - name: Run tests
         run: npm test
 
-      - name: EAS Build
+      # Build Android com EAS
+      - name: EAS Build Android
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
           EAS_BUILD_NO_EXPO_GO_WARNING: true
