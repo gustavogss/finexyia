@@ -13,10 +13,6 @@
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
-    "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "com.gsolucoesdigitais.finexyia"
-    },
     "android": {
       "package": "com.gsolucoesdigitais.finexyia",
       "adaptiveIcon": {
