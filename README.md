@@ -1,6 +1,6 @@
 # 📱 Finexyia
 
-### Inteligência Financeira na Palma da sua Mão
+## Inteligência Financeira na Palma da sua Mão
 
 [![CI/CD Pipeline](https://github.com/gustavogss/finexyia/actions/workflows/ci.yml/badge.svg)](https://github.com/gustavogss/finexyia/actions/workflows/ci.yml)
 [![Expo](https://img.shields.io/badge/Expo-54.0-black?logo=expo&logoColor=white)](https://expo.dev/)
@@ -96,6 +96,4 @@ Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para ma
 
 ---
 
-<p align="center">
-  Desenvolvido com ❤️ pela equipe Finexyia
-</p>
+**Desenvolvido com ❤️ pela equipe Finexyia**
