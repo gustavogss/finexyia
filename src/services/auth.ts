@@ -1,4 +1,5 @@
 import { User } from "@/types";
+import { AUTH_CONSTANTS, ERROR_MESSAGES } from "@/constants";
 import {
   createUserWithEmailAndPassword,
   GoogleAuthProvider,
@@ -18,135 +19,180 @@ import { createUserProfile, getUserProfile } from "./firestore";
  *
  * NOTE: For Native (Android/iOS), you must use @react-native-google-signin/google-signin
  * and then pass the idToken to signInWithCredential(auth, GoogleAuthProvider.credential(idToken)).
+ *
+ * TODO: Replace mock implementation with real Google Sign-In
+ * This is currently a placeholder for development/testing only.
  */
 export async function loginWithGoogle(): Promise<User> {
-  // Fix for Android/iOS: signInWithPopup is only for Web.
-  // We simulate a successful login here for your environment (Android Emulado).
-  console.log("[Auth] Google Login Simulation triggered.");
+  try {
+    // FIXME: This is a mock implementation for development only.
+    // In production, implement real Google Sign-In using @react-native-google-signin/google-signin
+    console.warn(
+      "[Auth] Google Login is currently mocked. Replace with real implementation for production.",
+    );
 
-  const simulatedUser = {
-    uid: "gustavo-mock-id",
-    displayName: "gustavo souza",
-    email: "gustavogss.jp@gmail.com",
-    photoURL: "https://ui-avatars.com/api/?name=Gustavo+Souza&background=1B3A4B&color=fff&size=200&bold=true&format=png",
-  };
-
-  let profile = await getUserProfile(simulatedUser.uid);
-
-  if (!profile) {
-    profile = {
-      id: simulatedUser.uid,
-      name: simulatedUser.displayName,
-      email: simulatedUser.email,
-      avatar: simulatedUser.photoURL,
-      plan: "free",
-      credits: 5,
-      monthlyCreditLimit: 5,
-      createdAt: new Date().toISOString(),
-      subscriptionStatus: "active",
-      isTrial: true,
-      currentPeriodStart: new Date().toISOString(),
-      currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-      cancelAtPeriodEnd: false,
-      mesesConsecutivos: 0,
-      stripeCustomerId: null,
-      stripeSubscriptionId: null,
-      updatedAt: new Date().toISOString(),
+    // For now, we simulate a successful login
+    // In production, this should use the real Google Sign-In flow
+    const simulatedUser = {
+      uid: "gustavo-mock-id",
+      displayName: "gustavo souza",
+      email: "gustavogss.jp@gmail.com",
+      photoURL:
+        "https://ui-avatars.com/api/?name=Gustavo+Souza&background=1B3A4B&color=fff&size=200&bold=true&format=png",
     };
-    await createUserProfile(profile);
-  }
 
-  // Fix for previously created mock users that were given 100 credits by mistake
-  if (profile && profile.plan === "free" && profile.credits === 100) {
-    profile.credits = 5;
-    profile.monthlyCreditLimit = 5;
-    await createUserProfile(profile); // This uses merge: true and will update it
-  }
+    let profile = await getUserProfile(simulatedUser.uid);
 
-  // Ensure avatar is always up-to-date from Google
-  if (!profile.avatar && simulatedUser.photoURL) {
-    profile.avatar = simulatedUser.photoURL;
-    await createUserProfile(profile);
-  }
+    if (!profile) {
+      profile = {
+        id: simulatedUser.uid,
+        name: simulatedUser.displayName,
+        email: simulatedUser.email,
+        avatar: simulatedUser.photoURL,
+        plan: AUTH_CONSTANTS.DEFAULT_PLAN,
+        credits: AUTH_CONSTANTS.INITIAL_CREDITS,
+        monthlyCreditLimit: AUTH_CONSTANTS.INITIAL_MONTHLY_LIMIT,
+        createdAt: new Date().toISOString(),
+        subscriptionStatus: AUTH_CONSTANTS.DEFAULT_SUBSCRIPTION_STATUS,
+        isTrial: true,
+        currentPeriodStart: new Date().toISOString(),
+        currentPeriodEnd: new Date(
+          Date.now() + AUTH_CONSTANTS.TRIAL_DURATION_DAYS * 24 * 60 * 60 * 1000,
+        ).toISOString(),
+        cancelAtPeriodEnd: false,
+        mesesConsecutivos: 0,
+        stripeCustomerId: null,
+        stripeSubscriptionId: null,
+        updatedAt: new Date().toISOString(),
+      };
+      await createUserProfile(profile);
+    }
 
-  return profile;
+    // Fix for previously created mock users that were given 100 credits by mistake
+    if (profile && profile.plan === "free" && profile.credits === 100) {
+      profile.credits = AUTH_CONSTANTS.INITIAL_CREDITS;
+      profile.monthlyCreditLimit = AUTH_CONSTANTS.INITIAL_MONTHLY_LIMIT;
+      await createUserProfile(profile);
+    }
+
+    // Ensure avatar is always up-to-date from Google
+    if (!profile.avatar && simulatedUser.photoURL) {
+      profile.avatar = simulatedUser.photoURL;
+      await createUserProfile(profile);
+    }
+
+    return profile;
+  } catch (error) {
+    console.error("[Auth] Google login failed:", error);
+    throw new Error(ERROR_MESSAGES.AUTH_FAILED);
+  }
 }
 
 /**
  * Register a new user with email/password.
  * Creates Firebase Auth account + Firestore user profile.
+ *
+ * @param name - User's full name
+ * @param email - User's email address
+ * @param password - User's password (must be at least 8 characters)
+ * @returns Created user profile
+ * @throws Error if registration fails
  */
 export async function registerUser(
   name: string,
   email: string,
   password: string,
 ): Promise<User> {
-  const credential = await createUserWithEmailAndPassword(
-    auth,
-    email,
-    password,
-  );
+  try {
+    if (!name || !email || !password) {
+      throw new Error("Name, email, and password are required");
+    }
 
-  await updateProfile(credential.user, { displayName: name });
+    const credential = await createUserWithEmailAndPassword(auth, email, password);
 
-  const user: User = {
-    id: credential.user.uid,
-    name,
-    email,
-    plan: "free",
-    credits: 5,
-    monthlyCreditLimit: 5,
-    createdAt: new Date().toISOString(),
-    subscriptionStatus: "active",
-    isTrial: true,
-    currentPeriodStart: new Date().toISOString(),
-    currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-    cancelAtPeriodEnd: false,
-    mesesConsecutivos: 0,
-    stripeCustomerId: null,
-    stripeSubscriptionId: null,
-    updatedAt: new Date().toISOString(),
-  };
+    await updateProfile(credential.user, { displayName: name });
 
-  await createUserProfile(user);
-  return user;
+    const user: User = {
+      id: credential.user.uid,
+      name,
+      email,
+      plan: AUTH_CONSTANTS.DEFAULT_PLAN,
+      credits: AUTH_CONSTANTS.INITIAL_CREDITS,
+      monthlyCreditLimit: AUTH_CONSTANTS.INITIAL_MONTHLY_LIMIT,
+      createdAt: new Date().toISOString(),
+      subscriptionStatus: AUTH_CONSTANTS.DEFAULT_SUBSCRIPTION_STATUS,
+      isTrial: true,
+      currentPeriodStart: new Date().toISOString(),
+      currentPeriodEnd: new Date(
+        Date.now() + AUTH_CONSTANTS.TRIAL_DURATION_DAYS * 24 * 60 * 60 * 1000,
+      ).toISOString(),
+      cancelAtPeriodEnd: false,
+      mesesConsecutivos: 0,
+      stripeCustomerId: null,
+      stripeSubscriptionId: null,
+      updatedAt: new Date().toISOString(),
+    };
+
+    await createUserProfile(user);
+    return user;
+  } catch (error) {
+    console.error("[Auth] Registration failed:", error);
+    throw error;
+  }
 }
 
 /**
  * Sign in an existing user with email/password.
  * Returns the Firestore user profile.
+ *
+ * @param email - User's email address
+ * @param password - User's password
+ * @returns User profile from Firestore
+ * @throws Error if login fails or profile not found
  */
-export async function loginUser(
-  email: string,
-  password: string,
-): Promise<User> {
-  const credential = await signInWithEmailAndPassword(auth, email, password);
-  const profile = await getUserProfile(credential.user.uid);
+export async function loginUser(email: string, password: string): Promise<User> {
+  try {
+    const credential = await signInWithEmailAndPassword(auth, email, password);
+    const profile = await getUserProfile(credential.user.uid);
 
-  if (!profile) {
-    throw new Error("Perfil do usuário não encontrado no Firestore.");
+    if (!profile) {
+      throw new Error(ERROR_MESSAGES.USER_NOT_FOUND);
+    }
+
+    // Fix for previously created mock users that were given 100 credits by mistake
+    if (profile.plan === "free" && profile.credits === 100) {
+      profile.credits = AUTH_CONSTANTS.INITIAL_CREDITS;
+      profile.monthlyCreditLimit = AUTH_CONSTANTS.INITIAL_MONTHLY_LIMIT;
+      await createUserProfile(profile);
+    }
+
+    return profile;
+  } catch (error) {
+    console.error("[Auth] Login failed:", error);
+    throw error;
   }
-
-  // Fix for previously created mock users that were given 100 credits by mistake
-  if (profile.plan === "free" && profile.credits === 100) {
-    profile.credits = 5;
-    profile.monthlyCreditLimit = 5;
-    await createUserProfile(profile); // This uses merge: true and will update it
-  }
-
-  return profile;
 }
 
 /**
  * Sign out the current user.
+ *
+ * @throws Error if sign out fails
  */
 export async function logoutUser(): Promise<void> {
-  await signOut(auth);
+  try {
+    await signOut(auth);
+  } catch (error) {
+    console.error("[Auth] Logout failed:", error);
+    throw error;
+  }
 }
 
 /**
  * Subscribe to auth state changes.
  * Returns an unsubscribe function.
+ *
+ * @param callback - Function to call when auth state changes
+ * @returns Unsubscribe function
  */
 export function onAuthChange(
   callback: (firebaseUser: FirebaseUser | null) => void,
